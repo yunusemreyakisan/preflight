@@ -1,0 +1,70 @@
+{
+  "name": "@yakisan/preflight",
+  "version": "0.1.0",
+  "description": "CLI-first App Store submission risk engine for preventing avoidable App Review failures.",
+  "author": "yunusemreyakisan",
+  "license": "MIT",
+  "homepage": "https://github.com/yunusemreyakisan/preflight#readme",
+  "bugs": {
+    "url": "https://github.com/yunusemreyakisan/preflight/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yunusemreyakisan/preflight.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "preflight": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/cli/index.ts scan",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm test && npm run lint && npm run build",
+    "prepublishOnly": "npm run verify"
+  },
+  "keywords": [
+    "app-store",
+    "app-store-connect",
+    "app-review",
+    "cli",
+    "ci",
+    "ios",
+    "release-gate",
+    "submission"
+  ],
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "cli-table3": "^0.6.5",
+    "commander": "^13.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@types/node": "^22.13.10",
+    "eslint": "^9.22.0",
+    "tsup": "^8.4.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1",
+    "vitest": "^3.0.8"
+  }
+}
