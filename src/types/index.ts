@@ -10,6 +10,7 @@ export type RuleCategory =
   | "content";
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
+export type HumanOutputMode = "plain" | "branded";
 
 export const SUPPORTED_LOCALES = [
   "en",
@@ -140,6 +141,7 @@ export interface ScanCommandOptions {
   cwd?: string;
   ci?: boolean;
   json?: boolean;
+  plain?: boolean;
   strict?: boolean;
   lang?: string;
 }
@@ -148,11 +150,13 @@ export interface ReviewerPackCommandOptions {
   configPath?: string;
   cwd?: string;
   json?: boolean;
+  plain?: boolean;
   lang?: string;
 }
 
 export interface RulesCommandOptions {
   json?: boolean;
+  plain?: boolean;
   update?: boolean;
   lang?: string;
 }
@@ -163,4 +167,3 @@ export interface InitCommandOptions {
   force?: boolean;
   lang?: string;
 }
-

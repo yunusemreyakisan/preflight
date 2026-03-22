@@ -10,6 +10,7 @@ type CommandOptions = {
   config?: string;
   ci?: boolean;
   json?: boolean;
+  plain?: boolean;
   strict?: boolean;
   lang?: string;
   update?: boolean;
@@ -32,7 +33,8 @@ export function buildProgram(argv = process.argv): Command {
     .name("preflight")
     .description(translator.t("cli.description"))
     .showHelpAfterError()
-    .option("--lang <locale>", translator.t("cli.option.lang"));
+    .option("--lang <locale>", translator.t("cli.option.lang"))
+    .option("--plain", translator.t("cli.option.plain"));
 
   program
     .command("scan")
@@ -47,6 +49,7 @@ export function buildProgram(argv = process.argv): Command {
         configPath: options.config,
         ci: options.ci,
         json: options.json,
+        plain: globalOptions.plain,
         strict: options.strict,
         lang: globalOptions.lang
       });
@@ -63,6 +66,7 @@ export function buildProgram(argv = process.argv): Command {
       const { output, exitCode } = runReviewerPack({
         configPath: options.config,
         json: options.json,
+        plain: globalOptions.plain,
         lang: globalOptions.lang
       });
       printAndSetExitCode(output, exitCode);
@@ -77,6 +81,7 @@ export function buildProgram(argv = process.argv): Command {
       const globalOptions = command.optsWithGlobals<CommandOptions>();
       const { output, exitCode } = runRules({
         json: options.json,
+        plain: globalOptions.plain,
         update: options.update,
         lang: globalOptions.lang
       });
@@ -117,4 +122,3 @@ if (require.main === module) {
     process.exitCode = 2;
   }
 }
-

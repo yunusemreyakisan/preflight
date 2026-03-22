@@ -2,21 +2,20 @@
 
 Preflight is a CLI-first, CI-integrated App Store submission risk engine for iOS apps.
 
-Current release channel: public beta (`0.1.x`).
-
 It answers three questions:
 
 1. Will this build get rejected?
 2. Why?
 3. How do I fix it right now?
 
-Preflight is not a checklist, not a static linter, and not an AI chatbot. It is a local release gate that turns reviewer-access, metadata, privacy, IAP, and completeness signals into a deterministic risk decision.
+Preflight is not a checklist, not a static linter, and not an AI chatbot. It is a local release gate that turns reviewer access, metadata, privacy, IAP, and completeness signals into a deterministic risk decision.
 
 ## Current Scope
 
 - CLI-first and local-first
 - 30 deterministic rules across reviewer access, completeness, metadata, privacy, IAP, and content
 - Reviewer Pack validation and review-note generation
+- Branded terminal output with plain fallback
 - Human-readable and JSON output
 - CI-ready exit codes
 - 10 supported CLI locales:
@@ -43,23 +42,47 @@ English and Turkish have full localized messaging. The remaining bundled locales
 
 ## Install
 
-```bash
-npm install -D @yakisan/preflight
-```
-
-## Commands
-
-Run from source:
+### npm
 
 ```bash
-npx tsx src/cli/index.ts scan
+npm install -g @yakisan/preflight
+preflight scan
 ```
 
-From npm:
+Or run it without installing globally:
 
 ```bash
 npx @yakisan/preflight scan
 ```
+
+### curl
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yunusemreyakisan/preflight/stable/scripts/install.sh | bash
+```
+
+### Go shim
+
+```bash
+go install github.com/yunusemreyakisan/preflight/cmd/preflight@latest
+preflight scan
+```
+
+The Go binary is a thin launcher. It delegates to the published npm package, so Node.js and npm still need to exist on the machine.
+
+### Homebrew formula
+
+For local installs from this repository:
+
+```bash
+brew install ./Formula/preflight.rb
+```
+
+Use `brew install --HEAD ./Formula/preflight.rb` if you want the latest branch state before the next npm release.
+
+The same formula can later be moved into a custom tap repo without changing the package itself.
+
+## Commands
 
 Available commands:
 
@@ -75,8 +98,11 @@ Common flags:
 - `--json`: machine-readable output
 - `--ci`: concise CI output for `scan`
 - `--strict`: treat `MEDIUM` risk as blocking for `scan`
+- `--plain`: disable branded terminal formatting
 - `--update`: include bundled rule metadata for `rules`
 - `--force`: overwrite an existing file for `init`
+
+Preflight automatically falls back to plain terminal output when `stdout` is not a TTY or `NO_COLOR=1` is present.
 
 ## Exit Codes
 
@@ -91,38 +117,30 @@ With `preflight scan --strict`, `MEDIUM` risk also exits with `2`.
 Create a starter config:
 
 ```bash
-npx tsx src/cli/index.ts init --lang en
+preflight init --lang en
 ```
 
 Run a full scan:
 
 ```bash
-npx tsx src/cli/index.ts scan
-```
-
-Or from the published package:
-
-```bash
-npx @yakisan/preflight scan
+preflight scan
 ```
 
 Generate reviewer-pack output only:
 
 ```bash
-npx tsx src/cli/index.ts reviewer-pack --lang tr
+preflight reviewer-pack --lang tr
 ```
 
 List bundled rules:
 
 ```bash
-npx tsx src/cli/index.ts rules --update
+preflight rules --update
 ```
 
 ## Config Shape
 
 Preflight accepts the canonical nested schema and also normalizes older flat aliases for backward compatibility.
-
-Canonical example:
 
 ```json
 {
@@ -177,13 +195,6 @@ Canonical example:
         "subtitle": "Release safety",
         "description": "Prevent avoidable App Store review issues before submission.",
         "keywords": "ios,review,release"
-      },
-      {
-        "locale": "tr-TR",
-        "title": "Ornek Uygulama",
-        "subtitle": "Yayin guvenligi",
-        "description": "Gonderim oncesinde onlenebilir App Store review sorunlarini yakalayin.",
-        "keywords": "ios,review,yayin"
       }
     ],
     "screenshots": [
@@ -271,3 +282,15 @@ npm test
 npm run lint
 npm run build
 ```
+
+## Releases
+
+Releases are tag-driven:
+
+```bash
+git tag v0.2.0
+git push origin stable
+git push origin v0.2.0
+```
+
+The release workflow always verifies the tagged build. npm publish runs automatically only when the repository has an `NPM_TOKEN` Actions secret configured.

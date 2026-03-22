@@ -22,8 +22,8 @@ export function runRules(options: RulesCommandOptions = {}): RunRulesResult {
   return {
     exitCode: 0,
     output: formatRulesTable(RULE_REGISTRY, translator, {
-      includeMetadata: options.update
+      includeMetadata: options.update,
+      plain: options.plain
     })
   };
 }
-

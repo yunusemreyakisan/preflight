@@ -94,7 +94,7 @@ export function scanProject(options: ScanCommandOptions = {}): ScanResult {
 
 export function renderScanResult(
   result: ScanResult,
-  options: Pick<ScanCommandOptions, "ci" | "json" | "lang"> = {}
+  options: Pick<ScanCommandOptions, "ci" | "json" | "lang" | "plain"> = {}
 ): string {
   const translator = createTranslatorFromOptions(options.lang ?? result.locale);
 
@@ -103,7 +103,8 @@ export function renderScanResult(
   }
 
   return formatHumanScanReport(result, translator, {
-    ci: options.ci
+    ci: options.ci,
+    plain: options.plain
   });
 }
 
@@ -148,7 +149,7 @@ export function buildReviewerPackReport(
 
 export function renderReviewerPackResult(
   reviewerPack: ReviewerPackReport,
-  options: Pick<ReviewerPackCommandOptions, "json" | "lang"> = {}
+  options: Pick<ReviewerPackCommandOptions, "json" | "lang" | "plain"> = {}
 ): string {
   const translator = createTranslatorFromOptions(options.lang);
 
@@ -156,5 +157,7 @@ export function renderReviewerPackResult(
     return formatReviewerPackJson(reviewerPack);
   }
 
-  return formatHumanReviewerPack(reviewerPack, translator);
+  return formatHumanReviewerPack(reviewerPack, translator, {
+    plain: options.plain
+  });
 }

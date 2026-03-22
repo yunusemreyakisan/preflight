@@ -1,6 +1,6 @@
 {
   "name": "@yakisan/preflight",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CLI-first App Store submission risk engine for preventing avoidable App Review failures.",
   "author": "yunusemreyakisan",
   "license": "MIT",

@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   RULE_REGISTRY,
   SUPPORTED_LOCALES,
+  createTranslator,
+  formatHumanScanReport,
   runInit,
   runReviewerPack,
   runRules,
@@ -93,7 +95,8 @@ describe("scanProject", () => {
       lang: "tr"
     });
 
-    expect(output).toContain("PREFLIGHT TARAMA SONUCLARI");
+    expect(output).toContain("App Store gonderim risk motoru");
+    expect(output).toContain("Gonderim Yuzeyi");
   });
 
   it("returns the v2 JSON shape", () => {
@@ -115,6 +118,47 @@ describe("scanProject", () => {
     expect(parsed.risk_level).toBe("LOW");
     expect(parsed.passed_checks).toHaveLength(30);
     expect(parsed.reviewer_pack.status).toBe("complete");
+  });
+
+  it("renders the branded scan layout when requested", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const config = buildValidConfig();
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const result = scanProject({ cwd: projectDir });
+    const output = formatHumanScanReport(result, createTranslator("en"), {
+      outputMode: "branded"
+    });
+
+    expect(output).toContain("Submission Surface");
+    expect(output).toContain("Reviewer Pack");
+    expect(output).toContain("Verdict");
+    expect(output).toContain("READY TO SUBMIT");
+  });
+
+  it("supports explicit plain output", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const config = buildValidConfig();
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const { output } = runScan({
+      cwd: projectDir,
+      plain: true
+    });
+
+    expect(output).toContain("Submission Surface");
+    expect(output).toContain("READY TO SUBMIT");
+    expect(output.includes("\u001b[")).toBe(false);
   });
 });
 
@@ -168,4 +212,3 @@ describe("auxiliary commands", () => {
     expect(fs.existsSync(outputPath)).toBe(true);
   });
 });
-
