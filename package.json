@@ -1,7 +1,7 @@
 {
   "name": "@yakisan/preflight",
-  "version": "0.3.0",
-  "description": "Auto-discovery-first App Store submission risk engine for iOS review readiness.",
+  "version": "0.3.1",
+  "description": "CLI for detecting App Store submission risk from local iOS project files before review.",
   "author": "yunusemreyakisan",
   "license": "MIT",
   "homepage": "https://github.com/yunusemreyakisan/preflight#readme",
@@ -43,16 +43,19 @@
   },
   "keywords": [
     "app-store",
-    "app-store-connect",
     "app-review",
-    "app-store-review",
+    "app-store-submission",
     "cli",
     "ci",
-    "discovery",
     "ios",
-    "release-gate",
-    "reviewer-pack",
-    "submission"
+    "review-readiness",
+    "privacy-manifest",
+    "storekit",
+    "react-native",
+    "flutter",
+    "fastlane",
+    "release-engineering",
+    "reviewer-pack"
   ],
   "dependencies": {
     "chalk": "^4.1.2",

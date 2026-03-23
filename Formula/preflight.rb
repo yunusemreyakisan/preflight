@@ -1,9 +1,9 @@
 class Preflight < Formula
-  desc "Auto-discovery-first App Store submission risk engine"
+  desc "CLI for detecting App Store submission risk from local iOS project files"
   homepage "https://github.com/yunusemreyakisan/preflight"
   license "MIT"
-  url "https://registry.npmjs.org/@yakisan/preflight/-/preflight-0.3.0.tgz"
-  sha256 "05bc282d6fdd3da29dd113c9bc7a76f424789b307779e3179d95f18e9be483d9"
+  url "https://registry.npmjs.org/@yakisan/preflight/-/preflight-0.3.1.tgz"
+  sha256 "336dea4d9fdf3d43fe1a40574e5325b8d4d124e853d4ae6467ead3a254ac2565"
   head "https://github.com/yunusemreyakisan/preflight.git", branch: "stable"
 
   depends_on "node"
