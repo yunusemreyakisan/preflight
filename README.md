@@ -221,7 +221,7 @@ npm run build
 Releases are npm-only and tag-driven:
 
 ```bash
-VERSION=0.3.3
+VERSION=$(node -p "require('./package.json').version")
 npm run verify
 git tag "v$VERSION"
 git push origin stable
