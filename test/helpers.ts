@@ -4,6 +4,79 @@ import path from "node:path";
 
 import type { PreflightConfig } from "../src";
 
+interface IosProjectFixtureOptions {
+  projectName?: string;
+  bundleId?: string;
+  displayName?: string;
+  iosRoot?: string;
+  includePrivacyManifest?: boolean;
+  includeRequiredReasonApis?: boolean;
+}
+
+function writeFile(filePath: string, content: string): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, content);
+}
+
+function writeIosProjectFixture(
+  projectDir: string,
+  options: IosProjectFixtureOptions = {}
+): void {
+  const projectName = options.projectName ?? "PreflightApp";
+  const bundleId = options.bundleId ?? "com.example.preflight";
+  const displayName = options.displayName ?? "Preflight App";
+  const iosRoot = path.join(projectDir, options.iosRoot ?? "");
+  const xcodeprojPath = path.join(iosRoot, `${projectName}.xcodeproj`, "project.pbxproj");
+  const appDir = path.join(iosRoot, projectName);
+  const infoPlistPath = path.join(appDir, "Info.plist");
+  const entitlementsPath = path.join(appDir, `${projectName}.entitlements`);
+
+  const pbxproj = `PRODUCT_BUNDLE_IDENTIFIER = ${bundleId};
+PRODUCT_NAME = ${projectName};
+INFOPLIST_FILE = ${projectName}/Info.plist;
+CODE_SIGN_ENTITLEMENTS = ${projectName}/${projectName}.entitlements;
+`;
+
+  const infoPlist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDisplayName</key>
+  <string>${displayName}</string>
+</dict>
+</plist>
+`;
+
+  writeFile(xcodeprojPath, pbxproj);
+  writeFile(infoPlistPath, infoPlist);
+  writeFile(entitlementsPath, "{}");
+
+  if (options.includePrivacyManifest) {
+    const privacyManifestPath = path.join(appDir, "PrivacyInfo.xcprivacy");
+    const requiredReasonApis = options.includeRequiredReasonApis
+      ? `
+  <key>NSPrivacyAccessedAPITypes</key>
+  <array>
+    <dict>
+      <key>NSPrivacyAccessedAPIType</key>
+      <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+    </dict>
+  </array>`
+      : "";
+
+    writeFile(
+      privacyManifestPath,
+      `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>${requiredReasonApis}
+</dict>
+</plist>
+`
+    );
+  }
+}
+
 export function createTempProject(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), "preflight-test-"));
 }
@@ -110,7 +183,11 @@ export function buildValidConfig(): PreflightConfig {
   };
 }
 
-export function writeConfig(projectDir: string, config: unknown, fileName = "preflight.config.json"): string {
+export function writeConfig(
+  projectDir: string,
+  config: unknown,
+  fileName = "preflight.config.json"
+): string {
   const configPath = path.join(projectDir, fileName);
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
@@ -126,3 +203,60 @@ export function writeScreenshots(projectDir: string, relativePaths: string[]): v
   });
 }
 
+export function writeDiscoveredScreenshots(
+  projectDir: string,
+  locale = "en-US",
+  fileNames = ["iphone-6.7-1.png", "iphone-6.7-2.png", "iphone-6.7-3.png"]
+): void {
+  writeScreenshots(
+    projectDir,
+    fileNames.map((fileName) => path.join("fastlane", "screenshots", locale, fileName))
+  );
+}
+
+export function writeNativeIosProject(
+  projectDir: string,
+  options: Omit<IosProjectFixtureOptions, "iosRoot"> = {}
+): void {
+  writeIosProjectFixture(projectDir, options);
+}
+
+export function writeFlutterIosProject(
+  projectDir: string,
+  options: Omit<IosProjectFixtureOptions, "iosRoot"> = {}
+): void {
+  writeFile(
+    path.join(projectDir, "pubspec.yaml"),
+    "name: preflight_flutter\nversion: 1.0.0\n"
+  );
+  writeIosProjectFixture(projectDir, {
+    projectName: "Runner",
+    iosRoot: "ios",
+    ...options
+  });
+}
+
+export function writeReactNativeIosProject(
+  projectDir: string,
+  options: Omit<IosProjectFixtureOptions, "iosRoot"> = {}
+): void {
+  writeFile(
+    path.join(projectDir, "package.json"),
+    JSON.stringify(
+      {
+        name: "preflight-rn",
+        version: "1.0.0",
+        dependencies: {
+          "react-native": "0.76.0"
+        }
+      },
+      null,
+      2
+    )
+  );
+  writeIosProjectFixture(projectDir, {
+    projectName: "PreflightRN",
+    iosRoot: "ios",
+    ...options
+  });
+}

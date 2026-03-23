@@ -14,7 +14,16 @@ import {
   runScan,
   scanProject
 } from "../src";
-import { buildValidConfig, createTempProject, writeConfig, writeScreenshots } from "./helpers";
+import {
+  buildValidConfig,
+  createTempProject,
+  writeConfig,
+  writeDiscoveredScreenshots,
+  writeFlutterIosProject,
+  writeNativeIosProject,
+  writeReactNativeIosProject,
+  writeScreenshots
+} from "./helpers";
 
 const createdDirs: string[] = [];
 
@@ -42,6 +51,57 @@ describe("scanProject", () => {
     expect(result.blocking_issues).toHaveLength(0);
     expect(result.warnings).toHaveLength(0);
     expect(result.passed_checks).toHaveLength(30);
+    expect(result.discovery.project_type).toBe("unknown");
+    expect(
+      result.discovery.warnings.some((warning) =>
+        warning.includes("Continuing with config-only inputs")
+      )
+    ).toBe(true);
+  });
+
+  it("discovers a native iOS project without config", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    writeNativeIosProject(projectDir, {
+      includePrivacyManifest: true,
+      includeRequiredReasonApis: true
+    });
+    writeDiscoveredScreenshots(projectDir);
+
+    const result = scanProject({ cwd: projectDir });
+
+    expect(result.discovery.project_type).toBe("native-ios");
+    expect(result.blocking_issues.some((issue) => issue.id === "DISCOVERY_001")).toBe(false);
+    expect(result.discovery.sources.some((source) => source.endsWith("Info.plist"))).toBe(true);
+    expect(result.evidence.some((entry) => entry.key === "app.name")).toBe(true);
+    expect(result.missing_inputs.map((input) => input.key)).toEqual(
+      expect.arrayContaining(["review.notes", "review.contact"])
+    );
+    expect(result.exit_code).toBe(1);
+  });
+
+  it("detects Flutter iOS projects from the ios subproject", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    writeFlutterIosProject(projectDir);
+    writeDiscoveredScreenshots(projectDir);
+
+    const result = scanProject({ cwd: projectDir });
+
+    expect(result.discovery.project_type).toBe("flutter-ios");
+    expect(result.blocking_issues.some((issue) => issue.id === "DISCOVERY_001")).toBe(false);
+  });
+
+  it("detects React Native iOS projects from the ios subproject", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    writeReactNativeIosProject(projectDir);
+    writeDiscoveredScreenshots(projectDir);
+
+    const result = scanProject({ cwd: projectDir });
+
+    expect(result.discovery.project_type).toBe("react-native-ios");
+    expect(result.blocking_issues.some((issue) => issue.id === "DISCOVERY_001")).toBe(false);
   });
 
   it("keeps screenshot resolution relative to the overridden config path", () => {
@@ -80,6 +140,37 @@ describe("scanProject", () => {
     expect(result.warnings.length + result.blocking_issues.length).toBeGreaterThan(0);
   });
 
+  it("lets config overrides win over discovered values", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    writeNativeIosProject(projectDir);
+    writeDiscoveredScreenshots(projectDir, "en-US", [
+      "iphone-6.7-1.png",
+      "iphone-6.7-2.png",
+      "iphone-6.7-3.png"
+    ]);
+    writeConfig(projectDir, {
+      metadata: {
+        requiredScreenshotDeviceTypes: ["iphone-6.5"]
+      }
+    });
+
+    const result = scanProject({ cwd: projectDir });
+
+    expect(result.discovery.project_type).toBe("native-ios");
+    expect(result.blocking_issues.some((issue) => issue.id === "META_001")).toBe(true);
+  });
+
+  it("fails clearly when no supported iOS project and no usable config are present", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+
+    const result = scanProject({ cwd: projectDir });
+
+    expect(result.risk_level).toBe("HIGH");
+    expect(result.blocking_issues.map((issue) => issue.id)).toContain("DISCOVERY_001");
+  });
+
   it("produces Turkish output", () => {
     const projectDir = createTempProject();
     createdDirs.push(projectDir);
@@ -99,7 +190,7 @@ describe("scanProject", () => {
     expect(output).toContain("Gonderim Yuzeyi");
   });
 
-  it("returns the v2 JSON shape", () => {
+  it("returns the v0.3 JSON shape", () => {
     const projectDir = createTempProject();
     createdDirs.push(projectDir);
     const config = buildValidConfig();
@@ -118,6 +209,10 @@ describe("scanProject", () => {
     expect(parsed.risk_level).toBe("LOW");
     expect(parsed.passed_checks).toHaveLength(30);
     expect(parsed.reviewer_pack.status).toBe("complete");
+    expect(parsed.discovery).toBeDefined();
+    expect(parsed.discovery.sources).toEqual([]);
+    expect(parsed.missing_inputs).toEqual([]);
+    expect(parsed.evidence).toEqual([]);
   });
 
   it("renders the branded scan layout when requested", () => {
@@ -210,5 +305,9 @@ describe("auxiliary commands", () => {
 
     expect(exitCode).toBe(0);
     expect(fs.existsSync(outputPath)).toBe(true);
+    const parsed = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+
+    expect(parsed.app).toBeUndefined();
+    expect(parsed.review.demoAccount.username).toBe("reviewer@example.com");
   });
 });

@@ -21,7 +21,7 @@ const englishMessages: MessageCatalog = {
 
   "cli.description": "CI-grade App Store submission risk engine.",
   "cli.option.lang": "Output language",
-  "cli.option.config": "Path to a preflight config file",
+  "cli.option.config": "Path to an optional preflight override file",
   "cli.option.ci": "Emit concise CI-oriented output",
   "cli.option.json": "Emit JSON output",
   "cli.option.plain": "Disable branded terminal formatting",
@@ -32,12 +32,13 @@ const englishMessages: MessageCatalog = {
   "cli.error.langFallback":
     "Unsupported language `{requested}`. Falling back to English.",
 
-  "command.scan.description": "Run a full local submission risk scan.",
+  "command.scan.description":
+    "Run an auto-discovery-first local submission risk scan.",
   "command.reviewer-pack.description": "Validate and generate the reviewer pack only.",
   "command.rules.description": "List bundled active rules.",
   "command.rules.option.update":
     "Show bundled rule metadata and explain local update status.",
-  "command.init.description": "Create a starter preflight configuration file.",
+  "command.init.description": "Create an optional preflight override template.",
 
   "output.scan.title": "PREFLIGHT SCAN RESULTS",
   "output.reviewerPack.title": "REVIEWER PACK",
@@ -50,7 +51,7 @@ const englishMessages: MessageCatalog = {
   "output.warnings": "Warnings",
   "output.passed": "Passed",
   "output.none": "None",
-  "output.configPath": "Config",
+  "output.configPath": "Override Config",
   "output.scannedAt": "Scanned At",
   "output.reviewerPack.status": "Reviewer Pack Status",
   "output.reviewerPack.missing": "Missing",
@@ -68,7 +69,21 @@ const englishMessages: MessageCatalog = {
   "output.brand.tagline": "App Store submission risk engine",
   "output.surface.title": "Submission Surface",
   "output.surface.reviewerPack": "Reviewer Pack",
+  "output.surface.discovery": "Project Discovery",
+  "output.surface.missingInputs": "Missing Human Inputs",
   "output.surface.config": "Config Health",
+  "output.discovery.title": "Project Discovery",
+  "output.discovery.projectType": "Project Type",
+  "output.discovery.projectRoot": "Project Root",
+  "output.discovery.iosRoot": "iOS Root",
+  "output.discovery.sources": "Detected Sources",
+  "output.discovery.evidence": "Discovery Evidence",
+  "output.discovery.warnings": "Discovery Warnings",
+  "output.missingInputs.title": "Missing Human Inputs",
+  "output.source.config": "user-provided",
+  "output.source.discovered": "detected",
+  "output.source.default": "default",
+  "output.source.missing": "missing",
   "output.verdict": "Verdict",
   "output.verdict.ready": "READY TO SUBMIT",
   "output.verdict.review": "REVIEW BEFORE SUBMIT",
@@ -92,7 +107,7 @@ const englishMessages: MessageCatalog = {
   "output.rule.column.severity": "Severity",
   "output.rule.column.guideline": "Guideline",
   "output.rule.column.lastVerified": "Last Verified",
-  "output.init.created": "Created `{path}`.",
+  "output.init.created": "Created optional override template `{path}`.",
   "output.init.exists":
     "Refusing to overwrite `{path}`. Re-run with `--force` to replace it.",
   "output.init.gitignoreHint":
@@ -114,6 +129,11 @@ const englishMessages: MessageCatalog = {
   "category.privacy": "Privacy",
   "category.business-iap": "Business / IAP",
   "category.content": "Content / Age Rating",
+
+  "projectType.native-ios": "Native iOS",
+  "projectType.flutter-ios": "Flutter iOS",
+  "projectType.react-native-ios": "React Native iOS",
+  "projectType.unknown": "Unknown",
 
   "severity.high": "HIGH",
   "severity.medium": "MEDIUM",
@@ -154,6 +174,40 @@ const englishMessages: MessageCatalog = {
   "reviewerPack.template.noIap":
     "No in-app purchases are required to review core features",
 
+  "missing.demoAccount.label": "Demo account",
+  "missing.demoAccount.message":
+    "Provide reviewer credentials so App Review can access the gated flow.",
+  "missing.reviewNotes.label": "Review notes",
+  "missing.reviewNotes.message":
+    "Add review notes that explain setup, credentials, and gated flows.",
+  "missing.loginInstructions.label": "Login instructions",
+  "missing.loginInstructions.message":
+    "Document how the reviewer should sign in and reach the core experience.",
+  "missing.contact.label": "Reviewer contact",
+  "missing.contact.message":
+    "Add a release contact name and email for follow-up during review.",
+  "missing.screenshots.label": "Screenshot assets",
+  "missing.screenshots.message":
+    "Provide screenshot paths in config or keep App Store screenshot assets in the repository.",
+  "missing.privacyPolicy.label": "Privacy policy URL",
+  "missing.privacyPolicy.message":
+    "Add a privacy policy URL in the override config when it cannot be discovered locally.",
+  "missing.nutritionLabel.label": "Privacy nutrition label status",
+  "missing.nutritionLabel.message":
+    "Confirm that the App Store privacy nutrition label is complete.",
+  "missing.subscriptionTerms.label": "Subscription terms disclosure",
+  "missing.subscriptionTerms.message":
+    "Confirm that subscription terms are visible in the purchase flow.",
+  "missing.restorePurchases.label": "Restore purchases action",
+  "missing.restorePurchases.message":
+    "Confirm that users can restore purchases from the app.",
+  "missing.freeTrialTerms.label": "Free trial disclosure",
+  "missing.freeTrialTerms.message":
+    "Confirm that the free trial duration, renewal terms, and pricing are visible.",
+  "missing.ugcModeration.label": "UGC moderation disclosure",
+  "missing.ugcModeration.message":
+    "Describe moderation/reporting controls for user-generated content.",
+
   "issue.CONFIG_001.title": "Preflight config file is missing",
   "issue.CONFIG_001.message":
     "Preflight cannot evaluate submission readiness because `preflight.config.json` was not found.",
@@ -170,9 +224,18 @@ const englishMessages: MessageCatalog = {
   "issue.CONFIG_003.fix": "Fix the JSON syntax and run the scan again.",
   "issue.CONFIG_004.title": "Preflight config schema is invalid",
   "issue.CONFIG_004.message":
-    "The config file is present, but required fields are missing or malformed.",
+    "The override config is present, but one or more values are malformed or unsupported.",
   "issue.CONFIG_004.fix":
-    "Update the config to match the documented schema and re-run the scan.",
+    "Update the override file to match the documented schema and re-run the scan.",
+  "issue.DISCOVERY_001.title": "No supported iOS project was discovered",
+  "issue.DISCOVERY_001.message":
+    "Preflight could not find a native iOS, Flutter iOS, or React Native iOS project at `{path}`.",
+  "issue.DISCOVERY_001.fix":
+    "Run Preflight from the mobile app root or point it at a supported iOS project directory.",
+  "discovery.warning.configFallback":
+    "No supported local iOS project was discovered. Continuing with config-only inputs.",
+  "discovery.warning.pbxprojUnreadable":
+    "The Xcode project file exists, but `project.pbxproj` could not be read.",
 
   "issue.REVIEWER_001.title": "Demo account is missing",
   "issue.REVIEWER_001.message":
@@ -341,7 +404,7 @@ const turkishMessages: MessageCatalog = {
 
   "cli.description": "CI seviyesi App Store gonderim risk motoru.",
   "cli.option.lang": "Cikti dili",
-  "cli.option.config": "Preflight config dosya yolu",
+  "cli.option.config": "Opsiyonel preflight override dosya yolu",
   "cli.option.ci": "Kisa CI ciktilari uret",
   "cli.option.json": "JSON cikti uret",
   "cli.option.plain": "Branded terminal bicimini kapat",
@@ -352,13 +415,13 @@ const turkishMessages: MessageCatalog = {
   "cli.error.langFallback":
     "Desteklenmeyen dil `{requested}`. Inglizceye geri donuluyor.",
 
-  "command.scan.description": "Tam yerel gonderim risk taramasini calistir.",
+  "command.scan.description": "Otomatik kesif once yerel gonderim risk taramasini calistir.",
   "command.reviewer-pack.description":
     "Sadece reviewer pack dogrulamasi ve uretimini calistir.",
   "command.rules.description": "Paketle gelen aktif kurallari listele.",
   "command.rules.option.update":
     "Paketli kural metadata bilgisini ve guncelleme durumunu goster.",
-  "command.init.description": "Baslangic preflight config dosyasi olustur.",
+  "command.init.description": "Opsiyonel preflight override sablonu olustur.",
 
   "output.scan.title": "PREFLIGHT TARAMA SONUCLARI",
   "output.reviewerPack.title": "REVIEWER PACK",
@@ -371,7 +434,7 @@ const turkishMessages: MessageCatalog = {
   "output.warnings": "Uyarilar",
   "output.passed": "Gecenler",
   "output.none": "Yok",
-  "output.configPath": "Config",
+  "output.configPath": "Override Config",
   "output.scannedAt": "Tarama Zamani",
   "output.reviewerPack.status": "Reviewer Pack Durumu",
   "output.reviewerPack.missing": "Eksikler",
@@ -389,7 +452,21 @@ const turkishMessages: MessageCatalog = {
   "output.brand.tagline": "App Store gonderim risk motoru",
   "output.surface.title": "Gonderim Yuzeyi",
   "output.surface.reviewerPack": "Reviewer Pack",
+  "output.surface.discovery": "Proje Kesfi",
+  "output.surface.missingInputs": "Eksik Insan Girdileri",
   "output.surface.config": "Config Sagligi",
+  "output.discovery.title": "Proje Kesfi",
+  "output.discovery.projectType": "Proje Tipi",
+  "output.discovery.projectRoot": "Proje Koku",
+  "output.discovery.iosRoot": "iOS Koku",
+  "output.discovery.sources": "Tespit Edilen Kaynaklar",
+  "output.discovery.evidence": "Kesif Kanitlari",
+  "output.discovery.warnings": "Kesif Uyarilari",
+  "output.missingInputs.title": "Eksik Insan Girdileri",
+  "output.source.config": "kullanici",
+  "output.source.discovered": "tespit",
+  "output.source.default": "varsayilan",
+  "output.source.missing": "eksik",
   "output.verdict": "Karar",
   "output.verdict.ready": "GONDERIME HAZIR",
   "output.verdict.review": "GONDERIM ONCESI GOZDEN GECIR",
@@ -413,7 +490,7 @@ const turkishMessages: MessageCatalog = {
   "output.rule.column.severity": "Seviye",
   "output.rule.column.guideline": "Guideline",
   "output.rule.column.lastVerified": "Son Dogrulama",
-  "output.init.created": "`{path}` olusturuldu.",
+  "output.init.created": "Opsiyonel override sablonu `{path}` olusturuldu.",
   "output.init.exists":
     "`{path}` zaten var. Uzerine yazmak icin `--force` ile tekrar calistirin.",
   "output.init.gitignoreHint":
@@ -435,6 +512,11 @@ const turkishMessages: MessageCatalog = {
   "category.privacy": "Gizlilik",
   "category.business-iap": "Ticari / IAP",
   "category.content": "Icerik / Yas Siniri",
+
+  "projectType.native-ios": "Native iOS",
+  "projectType.flutter-ios": "Flutter iOS",
+  "projectType.react-native-ios": "React Native iOS",
+  "projectType.unknown": "Bilinmiyor",
 
   "severity.high": "YUKSEK",
   "severity.medium": "ORTA",
@@ -474,6 +556,40 @@ const turkishMessages: MessageCatalog = {
   "reviewerPack.template.noIap":
     "Ana ozellikleri incelemek icin uygulama ici satin alim gerekmez",
 
+  "missing.demoAccount.label": "Demo hesabi",
+  "missing.demoAccount.message":
+    "Reviewer'in kapili akislara girebilmesi icin test kimlik bilgilerini ekleyin.",
+  "missing.reviewNotes.label": "Review notes",
+  "missing.reviewNotes.message":
+    "Kurulum, kimlik bilgileri ve kapili akislar icin review notes ekleyin.",
+  "missing.loginInstructions.label": "Giris talimatlari",
+  "missing.loginInstructions.message":
+    "Reviewer'in nasil giris yapacagini ve ana deneyime nasil ulasacagini yazin.",
+  "missing.contact.label": "Reviewer iletisim bilgisi",
+  "missing.contact.message":
+    "Review sirasinda takip icin yayin iletisim ismi ve e-postasi ekleyin.",
+  "missing.screenshots.label": "Screenshot assetleri",
+  "missing.screenshots.message":
+    "Screenshot yollarini config'te verin veya App Store screenshot assetlerini repository icinde tutun.",
+  "missing.privacyPolicy.label": "Gizlilik politikasi URL'si",
+  "missing.privacyPolicy.message":
+    "Yerelde kesfedilemiyorsa override config icinde gizlilik politikasi URL'si ekleyin.",
+  "missing.nutritionLabel.label": "Privacy nutrition label durumu",
+  "missing.nutritionLabel.message":
+    "App Store privacy nutrition label'in tamamlandigini dogrulayin.",
+  "missing.subscriptionTerms.label": "Subscription kosullari bildirimi",
+  "missing.subscriptionTerms.message":
+    "Subscription kosullarinin satin alma akisi icinde gorundugunu dogrulayin.",
+  "missing.restorePurchases.label": "Restore purchases aksiyonu",
+  "missing.restorePurchases.message":
+    "Kullanicilarin satin alimlari uygulama icinden restore edebildigini dogrulayin.",
+  "missing.freeTrialTerms.label": "Free trial bildirimi",
+  "missing.freeTrialTerms.message":
+    "Free trial suresi, yenileme kosullari ve ucret bilgisinin gorundugunu dogrulayin.",
+  "missing.ugcModeration.label": "UGC moderasyon bildirimi",
+  "missing.ugcModeration.message":
+    "Kullanici uretimli icerik icin moderasyon ve raporlama kontrollerini aciklayin.",
+
   "issue.CONFIG_001.title": "Preflight config dosyasi eksik",
   "issue.CONFIG_001.message":
     "Preflight `preflight.config.json` bulunamadigi icin gonderim hazirligini degerlendiremiyor.",
@@ -491,9 +607,18 @@ const turkishMessages: MessageCatalog = {
     "JSON yazimini duzeltin ve taramayi tekrar calistirin.",
   "issue.CONFIG_004.title": "Preflight config semasi gecersiz",
   "issue.CONFIG_004.message":
-    "Config dosyasi var ancak gerekli alanlar eksik veya hatali.",
+    "Override config var ancak bir veya daha fazla deger hatali ya da desteklenmiyor.",
   "issue.CONFIG_004.fix":
-    "Config'i dokumante edilen semaya gore guncelleyip yeniden calistirin.",
+    "Override dosyasini dokumante edilen semaya gore guncelleyip yeniden calistirin.",
+  "issue.DISCOVERY_001.title": "Desteklenen bir iOS projesi kesfedilemedi",
+  "issue.DISCOVERY_001.message":
+    "Preflight `{path}` icinde native iOS, Flutter iOS veya React Native iOS projesi bulamadi.",
+  "issue.DISCOVERY_001.fix":
+    "Preflight'i mobil uygulama kokunden calistirin veya desteklenen bir iOS proje dizinine yonlendirin.",
+  "discovery.warning.configFallback":
+    "Desteklenen yerel bir iOS projesi kesfedilemedi. Tarama sadece config girdileriyle surduruluyor.",
+  "discovery.warning.pbxprojUnreadable":
+    "Xcode proje dosyasi var ancak `project.pbxproj` okunamadi.",
 
   "issue.REVIEWER_001.title": "Demo hesabi eksik",
   "issue.REVIEWER_001.message":

@@ -5,6 +5,7 @@ import { RULESET_METADATA } from "../rules/registry";
 import type {
   HumanOutputMode,
   Issue,
+  MissingInput,
   ReviewerPackReport,
   RiskLevel,
   RuleCategory,
@@ -187,6 +188,9 @@ function buildSurfaceRows(
   result: ScanResult,
   translator: Translator
 ): SurfaceRow[] {
+  const hasDiscoveryBlocker = result.blocking_issues.some(
+    (issue) => issue.id === "DISCOVERY_001"
+  );
   const rows = SURFACE_CATEGORY_ORDER.map((category) => ({
     label: translator.t(`category.${category}`),
     status: getCategoryTone(category, result)
@@ -195,6 +199,21 @@ function buildSurfaceRows(
   rows.push({
     label: translator.t("output.surface.reviewerPack"),
     status: result.reviewer_pack.status === "complete" ? "ok" : "fail"
+  });
+
+  rows.push({
+    label: translator.t("output.surface.discovery"),
+    status:
+      result.discovery.project_type === "unknown" && hasDiscoveryBlocker
+        ? "fail"
+        : result.discovery.project_type === "unknown" || result.discovery.warnings.length > 0
+          ? "warn"
+          : "ok"
+  });
+
+  rows.push({
+    label: translator.t("output.surface.missingInputs"),
+    status: result.missing_inputs.length > 0 ? "warn" : "ok"
   });
 
   const hasConfigBlocker = result.blocking_issues.some(
@@ -207,6 +226,18 @@ function buildSurfaceRows(
   });
 
   return rows;
+}
+
+function formatSourceLabel(
+  source: "config" | "discovered" | "default" | "missing" | undefined,
+  translator: Translator,
+  mode: HumanOutputMode
+): string {
+  if (!source) {
+    return "";
+  }
+
+  return ` ${colorize(mode, "muted", `[${translator.t(`output.source.${source}`)}]`)}`;
 }
 
 function formatIssueBlock(
@@ -227,6 +258,79 @@ function formatIssueBlock(
   }
 
   return lines;
+}
+
+function formatDiscoverySection(
+  result: ScanResult,
+  translator: Translator,
+  mode: HumanOutputMode
+): string[] {
+  const lines = [
+    `  ${colorize(mode, "strong", translator.t("output.discovery.title"))}`,
+    renderLabelValue(
+      translator.t("output.discovery.projectType"),
+      translator.t(`projectType.${result.discovery.project_type}`),
+      mode
+    ),
+    renderLabelValue(
+      translator.t("output.discovery.projectRoot"),
+      result.discovery.project_root,
+      mode
+    )
+  ];
+
+  if (result.discovery.ios_root) {
+    lines.push(
+      renderLabelValue(
+        translator.t("output.discovery.iosRoot"),
+        result.discovery.ios_root,
+        mode
+      )
+    );
+  }
+
+  if (result.discovery.sources.length > 0) {
+    lines.push("", `  ${colorize(mode, "strong", translator.t("output.discovery.sources"))}`);
+    result.discovery.sources.forEach((source) => {
+      lines.push(`  - ${source}`);
+    });
+  }
+
+  if (result.discovery.evidence.length > 0) {
+    lines.push("", `  ${colorize(mode, "strong", translator.t("output.discovery.evidence"))}`);
+    result.discovery.evidence.forEach((entry) => {
+      const value = entry.value ? ` = ${entry.value}` : "";
+      const detail = entry.detail ? ` (${entry.detail})` : "";
+      lines.push(`  - ${entry.key}${value}${formatSourceLabel("discovered", translator, mode)}`);
+      lines.push(`    ${colorize(mode, "muted", entry.source)}${detail}`);
+    });
+  }
+
+  if (result.discovery.warnings.length > 0) {
+    lines.push("", `  ${colorize(mode, "strong", translator.t("output.discovery.warnings"))}`);
+    result.discovery.warnings.forEach((warning) => {
+      lines.push(`  - ${warning}`);
+    });
+  }
+
+  return lines;
+}
+
+function formatMissingInputBlock(
+  input: MissingInput,
+  translator: Translator,
+  mode: HumanOutputMode
+): string[] {
+  return [
+    `  ${formatStatusLabel(mode, "warn")} ${colorize(mode, "strong", input.label)}`,
+    `    ${colorize(mode, "muted", translator.t("output.issue.details"))} ${input.message}`,
+    `    ${colorize(mode, "muted", translator.t("output.rule.column.category"))} ${translator.t(
+      `category.${input.category}`
+    )}`,
+    `    ${colorize(mode, "muted", translator.t("output.rule.column.severity"))} ${translator.t(
+      `severity.${input.severity}`
+    )}`
+  ];
 }
 
 function formatReviewerPackTemplate(
@@ -274,9 +378,11 @@ function buildReviewerPackRows(
   ];
 
   reviewerPack.items.forEach((item) => {
+    const sourceLabel = formatSourceLabel(item.source, translator, mode);
+
     lines.push(
       renderStatusRow(
-        item.value ? `${item.label}: ${item.value}` : item.label,
+        item.value ? `${item.label}${sourceLabel}: ${item.value}` : `${item.label}${sourceLabel}`,
         item.status === "pass" ? "ok" : "fail",
         mode
       )
@@ -312,6 +418,19 @@ function formatCiScanReport(
     lines.push(`${translator.t("output.warnings")}:`);
     result.warnings.forEach((issue) =>
       lines.push(`- [${issue.id}] ${issue.title}: ${issue.fix}`)
+    );
+  }
+
+  lines.push(
+    `${translator.t("output.discovery.projectType")}: ${translator.t(
+      `projectType.${result.discovery.project_type}`
+    )}`
+  );
+
+  if (result.missing_inputs.length > 0) {
+    lines.push(`${translator.t("output.missingInputs.title")}:`);
+    result.missing_inputs.forEach((input) =>
+      lines.push(`- [${translator.t(`severity.${input.severity}`)}] ${input.label}: ${input.message}`)
     );
   }
 
@@ -373,6 +492,8 @@ function formatStandardScanReport(
     );
   }
 
+  lines.push("", ...formatDiscoverySection(result, translator, mode));
+
   if (result.blocking_issues.length > 0) {
     lines.push(
       "",
@@ -419,6 +540,16 @@ function formatStandardScanReport(
     lines.push("", `  ${colorize(mode, "strong", translator.t("output.configWarnings"))}`);
     result.config_warnings.forEach((warning) => {
       lines.push(`  - ${warning}`);
+    });
+  }
+
+  if (result.missing_inputs.length > 0) {
+    lines.push(
+      "",
+      `  ${colorize(mode, "strong", `${translator.t("output.missingInputs.title")} (${result.missing_inputs.length})`)}`
+    );
+    result.missing_inputs.forEach((missingInput) => {
+      lines.push(...formatMissingInputBlock(missingInput, translator, mode), "");
     });
   }
 

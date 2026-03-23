@@ -41,7 +41,9 @@ export const iapRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.IAP_002.message",
     fixKey: "issue.IAP_002.fix",
     evaluate(input) {
-      return input.config.business.hasIap && !input.config.business.subscriptionTermsDisplayed
+      return input.config.business.hasIap &&
+        input.isFieldKnown("business.subscriptionTermsDisplayed") &&
+        !input.config.business.subscriptionTermsDisplayed
         ? { passed: false }
         : { passed: true };
     }
@@ -56,7 +58,7 @@ export const iapRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.IAP_003.message",
     fixKey: "issue.IAP_003.fix",
     evaluate(input) {
-      return input.config.business.externalPaymentLinksPresent
+      return input.isFieldExplicitlyTrue("business.externalPaymentLinksPresent")
         ? { passed: false }
         : { passed: true };
     }
@@ -71,7 +73,9 @@ export const iapRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.IAP_004.message",
     fixKey: "issue.IAP_004.fix",
     evaluate(input) {
-      return input.config.business.hasIap && !input.config.business.restorePurchasesPresent
+      return input.config.business.hasIap &&
+        input.isFieldKnown("business.restorePurchasesPresent") &&
+        !input.config.business.restorePurchasesPresent
         ? { passed: false }
         : { passed: true };
     }
@@ -88,10 +92,10 @@ export const iapRules: RuleDefinition<ScanInput>[] = [
     evaluate(input) {
       return input.config.business.hasIap &&
         input.config.business.offersFreeTrial &&
+        input.isFieldKnown("business.freeTrialTermsDisplayed") &&
         !input.config.business.freeTrialTermsDisplayed
         ? { passed: false }
         : { passed: true };
     }
   }
 ];
-

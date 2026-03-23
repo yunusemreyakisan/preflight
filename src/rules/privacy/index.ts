@@ -14,6 +14,13 @@ export const privacyRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.PRIVACY_001.message",
     fixKey: "issue.PRIVACY_001.fix",
     evaluate(input) {
+      const hasKnownPolicySignal =
+        input.isFieldKnown("privacy.policyUrl") || input.isFieldKnown("privacy.policyReachable");
+
+      if (!hasKnownPolicySignal) {
+        return { passed: true };
+      }
+
       return !input.config.privacy.policyUrl || !input.config.privacy.policyReachable
         ? { passed: false }
         : { passed: true };
@@ -29,7 +36,8 @@ export const privacyRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.PRIVACY_002.message",
     fixKey: "issue.PRIVACY_002.fix",
     evaluate(input) {
-      return !input.config.privacy.nutritionLabelComplete
+      return input.isFieldKnown("privacy.nutritionLabelComplete") &&
+        !input.config.privacy.nutritionLabelComplete
         ? { passed: false }
         : { passed: true };
     }
@@ -60,7 +68,8 @@ export const privacyRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.PRIVACY_004.message",
     fixKey: "issue.PRIVACY_004.fix",
     evaluate(input) {
-      return !input.config.privacy.requiredReasonApisDeclared
+      return input.isFieldKnown("privacy.requiredReasonApisDeclared") &&
+        !input.config.privacy.requiredReasonApisDeclared
         ? { passed: false }
         : { passed: true };
     }
@@ -75,10 +84,10 @@ export const privacyRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.PRIVACY_005.message",
     fixKey: "issue.PRIVACY_005.fix",
     evaluate(input) {
-      return !input.config.privacy.dataCollectionMatchesLabel
+      return input.isFieldKnown("privacy.dataCollectionMatchesLabel") &&
+        !input.config.privacy.dataCollectionMatchesLabel
         ? { passed: false }
         : { passed: true };
     }
   }
 ];
-

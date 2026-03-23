@@ -13,6 +13,12 @@ Preflight is not a checklist, not a static linter, and not an AI chatbot. It is 
 ## Current Scope
 
 - CLI-first and local-first
+- Auto-discovery-first scanning from local Apple project files
+- Supported project types:
+  - native iOS
+  - Flutter iOS
+  - React Native iOS
+- Optional sparse override config via `preflight.config.json`
 - 30 deterministic rules across reviewer access, completeness, metadata, privacy, IAP, and content
 - Reviewer Pack validation and review-note generation
 - Branded terminal output with plain fallback
@@ -35,7 +41,7 @@ English and Turkish have full localized messaging. The remaining bundled locales
 ## Not In Scope Yet
 
 - App Store Connect API integration
-- IPA or entitlement scanning
+- IPA scanning
 - Runtime flow simulation
 - Cloud dashboard
 - Remote rule sync
@@ -94,7 +100,7 @@ Available commands:
 Common flags:
 
 - `--lang <locale>`: output locale
-- `--config <path>`: override `preflight.config.json`
+- `--config <path>`: path to an optional override file
 - `--json`: machine-readable output
 - `--ci`: concise CI output for `scan`
 - `--strict`: treat `MEDIUM` risk as blocking for `scan`
@@ -114,16 +120,16 @@ With `preflight scan --strict`, `MEDIUM` risk also exits with `2`.
 
 ## Quick Start
 
-Create a starter config:
-
-```bash
-preflight init --lang en
-```
-
-Run a full scan:
+Run a full scan first:
 
 ```bash
 preflight scan
+```
+
+If the scan reports missing human-only inputs or you need to override a detected value, create an optional override template:
+
+```bash
+preflight init --lang en
 ```
 
 Generate reviewer-pack output only:
@@ -140,24 +146,20 @@ preflight rules --update
 
 ## Config Shape
 
-Preflight accepts the canonical nested schema and also normalizes older flat aliases for backward compatibility.
+`preflight scan` now auto-discovers local iOS project facts first, then merges `preflight.config.json` only if it exists.
+
+The override file is optional and can stay sparse. Use it for reviewer-only inputs and values that cannot be discovered reliably from local Apple project files. Fully populated older configs still work, and flat legacy aliases are still normalized for backward compatibility.
+
+Minimal override example:
 
 ```json
 {
-  "app": {
-    "name": "Example App",
-    "bundleId": "com.example.app"
-  },
   "submission": {
-    "platform": "ios",
     "primaryMarkets": ["en-US", "tr-TR"]
   },
   "appCapabilities": {
     "loginRequired": true,
-    "paywallPresent": true,
-    "paywallReachable": true,
     "placeholderContentPresent": false,
-    "declaredFeatures": ["sign-in", "paywall", "settings"],
     "inaccessibleFeatures": [],
     "brokenFlows": [],
     "onboardingRequiresExternalDependency": false,
@@ -178,64 +180,16 @@ Preflight accepts the canonical nested schema and also normalizes older flat ali
       "email": "mobile@example.com",
       "phone": ""
     },
-    "notes": "Test account: reviewer@example.com / password123. Paywall is reachable from Settings > Upgrade.",
-    "loginInstructions": "1. Open app\n2. Tap Sign In\n3. Use the demo account above",
+    "notes": "Test account: reviewer@example.com / password123. Open the signed-in home screen, then go to Settings -> Upgrade to reach the paywall.",
+    "loginInstructions": "1. Open app\n2. Tap Sign In\n3. Use the demo account above\n4. Open Settings -> Upgrade",
     "internetRequired": true
-  },
-  "metadata": {
-    "subtitle": "Release safety",
-    "description": "Prevent avoidable App Store review issues before submission.",
-    "keywords": "ios,review,release",
-    "primaryMarkets": ["en-US", "tr-TR"],
-    "requiredScreenshotDeviceTypes": ["iphone-6.7", "iphone-6.5"],
-    "localizations": [
-      {
-        "locale": "en-US",
-        "title": "Example App",
-        "subtitle": "Release safety",
-        "description": "Prevent avoidable App Store review issues before submission.",
-        "keywords": "ios,review,release"
-      }
-    ],
-    "screenshots": [
-      {
-        "path": "assets/screenshots/iphone-6.7-1.png",
-        "locales": ["en-US", "tr-TR"],
-        "deviceType": "iphone-6.7"
-      },
-      {
-        "path": "assets/screenshots/iphone-6.7-2.png",
-        "locales": ["en-US", "tr-TR"],
-        "deviceType": "iphone-6.7"
-      },
-      {
-        "path": "assets/screenshots/iphone-6.5-1.png",
-        "locales": ["en-US", "tr-TR"],
-        "deviceType": "iphone-6.5"
-      }
-    ]
   },
   "privacy": {
     "policyUrl": "https://example.com/privacy",
-    "policyReachable": true,
-    "nutritionLabelComplete": true,
-    "privacyManifestPresent": true,
-    "requiredReasonApisDeclared": true,
-    "trackingUsed": false,
-    "trackingUsageDescriptionPresent": false,
-    "dataCollectionMatchesLabel": true
+    "nutritionLabelComplete": true
   },
   "business": {
-    "hasIap": true,
-    "iapProducts": [
-      {
-        "productId": "pro.monthly",
-        "displayName": "Pro Monthly",
-        "reachableFromPaywall": true
-      }
-    ],
     "subscriptionTermsDisplayed": true,
-    "externalPaymentLinksPresent": false,
     "restorePurchasesPresent": true,
     "offersFreeTrial": false,
     "freeTrialTermsDisplayed": false
@@ -247,6 +201,15 @@ Preflight accepts the canonical nested schema and also normalizes older flat ali
   }
 }
 ```
+
+Auto-discovered signals currently come from local Apple-side files such as:
+
+- `Info.plist`
+- `.xcodeproj/project.pbxproj`
+- entitlements files
+- `PrivacyInfo.xcprivacy`
+- `.storekit`
+- screenshot folders such as `fastlane/screenshots`
 
 ## CI Example
 
@@ -288,9 +251,21 @@ npm run build
 Releases are tag-driven:
 
 ```bash
-git tag v0.2.0
+npm run verify
+git tag v0.3.0
 git push origin stable
-git push origin v0.2.0
+git push origin v0.3.0
 ```
 
-The release workflow always verifies the tagged build. npm publish runs automatically only when the repository has an `NPM_TOKEN` Actions secret configured.
+Compact release checklist:
+
+1. Update `package.json` and `package-lock.json` to the target version.
+2. Run `npm run verify`.
+3. Create the matching tag, for example `v0.3.0`.
+4. Push `stable` and the tag.
+
+Pushing the tag triggers the release workflow, which:
+
+- verifies the tagged build
+- creates a GitHub Release for the same tag
+- publishes to npm when the repository has an `NPM_TOKEN` Actions secret configured

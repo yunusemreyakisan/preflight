@@ -65,6 +65,13 @@ export const metadataRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.META_001.message",
     fixKey: "issue.META_001.fix",
     evaluate(input) {
+      if (
+        input.isFieldUnknown("metadata.screenshots") &&
+        input.isFieldUnknown("metadata.requiredScreenshotDeviceTypes")
+      ) {
+        return { passed: true };
+      }
+
       return input.missingScreenshotDeviceTypes.length > 0
         ? {
             passed: false,
@@ -83,6 +90,10 @@ export const metadataRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.META_002.message",
     fixKey: "issue.META_002.fix",
     evaluate(input) {
+      if (input.isFieldUnknown("metadata.screenshots")) {
+        return { passed: true };
+      }
+
       const existingAssets = input.screenshotAssets.filter((asset) => asset.exists);
 
       return existingAssets.length < 3

@@ -72,11 +72,13 @@ export const reviewerRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.REVIEWER_005.message",
     fixKey: "issue.REVIEWER_005.fix",
     evaluate(input) {
-      return (input.config.appCapabilities.regionRestricted || input.config.appCapabilities.vpnRequired) &&
+      return (
+        input.isFieldExplicitlyTrue("appCapabilities.regionRestricted") ||
+        input.isFieldExplicitlyTrue("appCapabilities.vpnRequired")
+      ) &&
         !input.regionRestrictionDocumented
         ? { passed: false }
         : { passed: true };
     }
   }
 ];
-

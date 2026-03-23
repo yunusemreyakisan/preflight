@@ -27,8 +27,34 @@ describe("loadConfigFromFile", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.config.app.bundleId).toBe("com.example.preflight");
+      expect(result.config.app?.bundleId).toBe("com.example.preflight");
       expect(result.configPath).toBe(path.join(projectDir, "preflight.config.json"));
+    }
+  });
+
+  it("keeps sparse overrides sparse", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    writeConfig(projectDir, {
+      review: {
+        notes: "Use the guest entry point from the launch screen."
+      }
+    });
+
+    const result = loadConfigFromFile({
+      cwd: projectDir,
+      translator: createTranslator("en")
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.config.review?.notes).toBe(
+        "Use the guest entry point from the launch screen."
+      );
+      expect(result.config.app).toBeUndefined();
+      expect(result.fieldSources).toEqual({
+        "review.notes": "config"
+      });
     }
   });
 
@@ -73,8 +99,8 @@ describe("loadConfigFromFile", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.config.review.demoAccount?.username).toBe("reviewer@example.com");
-      expect(result.config.appCapabilities.loginRequired).toBe(true);
+      expect(result.config.review?.demoAccount?.username).toBe("reviewer@example.com");
+      expect(result.config.appCapabilities?.loginRequired).toBe(true);
       expect(result.warnings).toHaveLength(1);
     }
   });
@@ -85,8 +111,10 @@ describe("loadConfigFromFile", () => {
     fs.writeFileSync(
       path.join(projectDir, "preflight.config.json"),
       JSON.stringify({
-        app: {
-          bundleId: "com.example.missing"
+        review: {
+          contact: {
+            email: "not-an-email"
+          }
         }
       })
     );
@@ -99,8 +127,9 @@ describe("loadConfigFromFile", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.issue.id).toBe("CONFIG_004");
-      expect(result.issue.details?.some((detail) => detail.includes("app.name"))).toBe(true);
+      expect(
+        result.issue.details?.some((detail) => detail.includes("review.contact.email"))
+      ).toBe(true);
     }
   });
 });
-

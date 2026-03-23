@@ -4,24 +4,28 @@ import path from "node:path";
 import { ZodError } from "zod";
 
 import {
-  normalizePreflightConfig,
-  preflightConfigSchema,
-  type PreflightConfig
+  normalizePreflightConfigOverride,
+  preflightConfigOverrideSchema,
+  type PreflightConfigOverride
 } from "./schema";
-import type { ConfigWarning, Issue, Translator } from "../types";
+import { collectFieldSources } from "./object-helpers";
+import type { ConfigWarning, FieldSource, Issue, Translator } from "../types";
 
 const CONFIG_LAST_VERIFIED = "2026-03-23";
 
 export interface LoadedConfigSuccess {
   ok: true;
-  config: PreflightConfig;
+  exists: boolean;
+  config: PreflightConfigOverride;
   configPath: string;
   configDir: string;
   warnings: ConfigWarning[];
+  fieldSources: Record<string, FieldSource>;
 }
 
 export interface LoadedConfigFailure {
   ok: false;
+  exists: boolean;
   configPath: string;
   issue: Issue;
   warnings: ConfigWarning[];
@@ -31,7 +35,7 @@ export type LoadedConfigResult = LoadedConfigSuccess | LoadedConfigFailure;
 
 function buildConfigurationIssue(
   translator: Translator,
-  id: "CONFIG_001" | "CONFIG_002" | "CONFIG_003" | "CONFIG_004",
+  id: "CONFIG_002" | "CONFIG_003" | "CONFIG_004",
   details?: string[]
 ): Issue {
   return {
@@ -80,10 +84,13 @@ export function loadConfigFromFile(options: {
 
   if (!fs.existsSync(resolvedPath)) {
     return {
-      ok: false,
+      ok: true,
+      exists: false,
+      config: {},
       configPath: resolvedPath,
+      configDir: path.dirname(resolvedPath),
       warnings: [],
-      issue: buildConfigurationIssue(options.translator, "CONFIG_001")
+      fieldSources: {}
     };
   }
 
@@ -94,6 +101,7 @@ export function loadConfigFromFile(options: {
   } catch (error) {
     return {
       ok: false,
+      exists: true,
       configPath: resolvedPath,
       warnings: [],
       issue: buildConfigurationIssue(options.translator, "CONFIG_002", [
@@ -109,6 +117,7 @@ export function loadConfigFromFile(options: {
   } catch (error) {
     return {
       ok: false,
+      exists: true,
       configPath: resolvedPath,
       warnings: [],
       issue: buildConfigurationIssue(options.translator, "CONFIG_003", [
@@ -117,23 +126,26 @@ export function loadConfigFromFile(options: {
     };
   }
 
-  const normalized = normalizePreflightConfig(parsedJson);
+  const normalized = normalizePreflightConfigOverride(parsedJson);
   const localizedWarnings = localizeWarnings(normalized.warnings, options.translator);
 
   try {
-    const config = preflightConfigSchema.parse(normalized.normalized);
+    const config = preflightConfigOverrideSchema.parse(normalized.normalized);
 
     return {
       ok: true,
+      exists: true,
       config,
       configPath: resolvedPath,
       configDir: path.dirname(resolvedPath),
-      warnings: localizedWarnings
+      warnings: localizedWarnings,
+      fieldSources: collectFieldSources(config, "config")
     };
   } catch (error) {
     if (error instanceof ZodError) {
       return {
         ok: false,
+        exists: true,
         configPath: resolvedPath,
         warnings: localizedWarnings,
         issue: buildConfigurationIssue(
@@ -146,6 +158,7 @@ export function loadConfigFromFile(options: {
 
     return {
       ok: false,
+      exists: true,
       configPath: resolvedPath,
       warnings: localizedWarnings,
       issue: buildConfigurationIssue(options.translator, "CONFIG_004", [

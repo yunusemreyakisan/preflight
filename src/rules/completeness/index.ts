@@ -14,7 +14,7 @@ export const completenessRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.COMPLETE_001.message",
     fixKey: "issue.COMPLETE_001.fix",
     evaluate(input) {
-      return input.config.appCapabilities.placeholderContentPresent
+      return input.isFieldExplicitlyTrue("appCapabilities.placeholderContentPresent")
         ? { passed: false }
         : { passed: true };
     }
@@ -29,7 +29,8 @@ export const completenessRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.COMPLETE_002.message",
     fixKey: "issue.COMPLETE_002.fix",
     evaluate(input) {
-      return input.config.appCapabilities.inaccessibleFeatures.length > 0
+      return input.isFieldKnown("appCapabilities.inaccessibleFeatures") &&
+        input.config.appCapabilities.inaccessibleFeatures.length > 0
         ? {
             passed: false,
             details: input.config.appCapabilities.inaccessibleFeatures
@@ -47,8 +48,15 @@ export const completenessRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.COMPLETE_003.message",
     fixKey: "issue.COMPLETE_003.fix",
     evaluate(input) {
-      return input.config.appCapabilities.paywallPresent &&
-        (!input.config.appCapabilities.paywallReachable || !input.paywallDocumented)
+      if (!input.config.appCapabilities.paywallPresent) {
+        return { passed: true };
+      }
+
+      if (input.isFieldExplicitlyFalse("appCapabilities.paywallReachable")) {
+        return { passed: false };
+      }
+
+      return input.hasAnyReviewerDocumentation && !input.paywallDocumented
         ? { passed: false }
         : { passed: true };
     }
@@ -63,7 +71,8 @@ export const completenessRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.COMPLETE_004.message",
     fixKey: "issue.COMPLETE_004.fix",
     evaluate(input) {
-      return input.config.appCapabilities.brokenFlows.length > 0
+      return input.isFieldKnown("appCapabilities.brokenFlows") &&
+        input.config.appCapabilities.brokenFlows.length > 0
         ? {
             passed: false,
             details: input.config.appCapabilities.brokenFlows
@@ -81,10 +90,11 @@ export const completenessRules: RuleDefinition<ScanInput>[] = [
     messageKey: "issue.COMPLETE_005.message",
     fixKey: "issue.COMPLETE_005.fix",
     evaluate(input) {
-      return input.config.appCapabilities.onboardingRequiresExternalDependency
+      return input.isFieldExplicitlyTrue(
+        "appCapabilities.onboardingRequiresExternalDependency"
+      )
         ? { passed: false }
         : { passed: true };
     }
   }
 ];
-

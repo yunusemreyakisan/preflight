@@ -6,7 +6,11 @@ export { runScan, type RunScanResult } from "./cli/commands/scan";
 export { SUPPORTED_LOCALES } from "./types";
 export {
   preflightConfigSchema,
+  preflightConfigOverrideSchema,
+  defaultPreflightConfig,
   type PreflightConfig,
+  type PreflightConfigOverride,
+  normalizePreflightConfigOverride,
   normalizePreflightConfig
 } from "./config/schema";
 export {
@@ -25,17 +29,25 @@ export { generateReviewerPackTemplate } from "./reviewer-pack/generator";
 export { evaluateReviewerPack } from "./reviewer-pack/evaluate-reviewer-pack";
 export { assessRisk, getExitCode } from "./risk/assess-risk";
 export { RULE_REGISTRY, RULESET_METADATA, evaluateRuleRegistry } from "./rules/registry";
+export { discoverProject } from "./discovery/discover-project";
 export {
   buildReviewerPackReport,
   renderReviewerPackResult,
   renderScanResult,
   scanProject
 } from "./scanner/scan-project";
+export { buildScanInput, collectMissingInputs } from "./scanner/build-scan-input";
 export type {
   ConfigWarning,
+  DiscoveryEvidence,
+  DiscoveryReport,
+  FieldSource,
   InitCommandOptions,
   Issue,
+  MissingInput,
   PassedCheck,
+  ProjectType,
+  ResolvedField,
   ReviewerPackCommandOptions,
   ReviewerPackItem,
   ReviewerPackReport,

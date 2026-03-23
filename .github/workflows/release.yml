@@ -37,6 +37,21 @@ jobs:
       - name: Verify package
         run: npm run verify
 
+  publish-github-release:
+    name: Publish GitHub Release
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+
   publish-npm:
     name: Publish to npm
     needs: verify
@@ -69,16 +84,29 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
 
-      - name: Install dependencies
+      - name: Check if version is already published
         if: steps.npm-auth.outputs.enabled == 'true'
+        id: npm-version
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version >/dev/null 2>&1; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "${PACKAGE_NAME}@${PACKAGE_VERSION} is already published; skipping npm publish."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.npm-auth.outputs.enabled == 'true' && steps.npm-version.outputs.publish == 'true'
         run: npm ci
 
       - name: Build package
-        if: steps.npm-auth.outputs.enabled == 'true'
+        if: steps.npm-auth.outputs.enabled == 'true' && steps.npm-version.outputs.publish == 'true'
         run: npm run build
 
       - name: Publish to npm
-        if: steps.npm-auth.outputs.enabled == 'true'
+        if: steps.npm-auth.outputs.enabled == 'true' && steps.npm-version.outputs.publish == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public

@@ -11,6 +11,12 @@ export type RuleCategory =
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 export type HumanOutputMode = "plain" | "branded";
+export type FieldSource = "default" | "discovered" | "config";
+export type ProjectType =
+  | "native-ios"
+  | "flutter-ios"
+  | "react-native-ios"
+  | "unknown";
 
 export const SUPPORTED_LOCALES = [
   "en",
@@ -46,6 +52,43 @@ export interface ScreenshotAssetStatus {
 
 export interface ConfigWarning {
   code: string;
+  message: string;
+}
+
+export interface DiscoveryEvidence {
+  key: string;
+  source: string;
+  value?: string;
+  detail?: string;
+}
+
+export interface ResolvedField<TValue = unknown> {
+  key: string;
+  value: TValue;
+  known: boolean;
+  source: FieldSource;
+  evidence: DiscoveryEvidence[];
+}
+
+export interface DiscoveryReport {
+  project_type: ProjectType;
+  project_root: string;
+  ios_root?: string;
+  xcodeproj_path?: string;
+  info_plist_path?: string;
+  entitlements_path?: string;
+  privacy_manifest_path?: string;
+  capability_hints: string[];
+  sources: string[];
+  warnings: string[];
+  evidence: DiscoveryEvidence[];
+}
+
+export interface MissingInput {
+  key: string;
+  label: string;
+  category: RuleCategory;
+  severity: Severity;
   message: string;
 }
 
@@ -106,6 +149,7 @@ export interface ReviewerPackItem {
   label: string;
   status: "pass" | "fail";
   value?: string;
+  source?: FieldSource | "missing";
 }
 
 export interface ReviewerPackReport {
@@ -128,6 +172,9 @@ export interface RiskReport {
 
 export interface ScanResult extends RiskReport {
   reviewer_pack: ReviewerPackReport;
+  discovery: DiscoveryReport;
+  evidence: DiscoveryEvidence[];
+  missing_inputs: MissingInput[];
   rule_coverage_note: string;
   exit_code: number;
   locale: SupportedLocale;
