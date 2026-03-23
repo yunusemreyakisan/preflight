@@ -50,6 +50,30 @@ jobs:
         with:
           name: ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
+          body: |
+            ## Install
+
+            ```bash
+            npx @yakisan/preflight scan
+            ```
+
+            Or install the CLI globally:
+
+            ```bash
+            npm install -g @yakisan/preflight
+            preflight scan
+            ```
+
+            ## Release Notes
+
+            - Preflight is distributed via npm only.
+            - `scan` is auto-discovery-first and uses `preflight.config.json` only for sparse overrides.
+            - Output includes risk, evidence, missing inputs, and reviewer-pack guidance for local workflows and CI.
+
+            ## Requirements
+
+            - Node.js 20 or newer
+            - Legacy `curl`, Go shim, and Homebrew install paths are no longer supported
           generate_release_notes: true
 
   publish-npm:
