@@ -47,5 +47,40 @@ jobs:
       - name: Build package
         run: npm run build
 
+      - name: Resolve CodeQL upload mode
+        id: upload-mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          IS_PRIVATE_REPOSITORY: ${{ github.event.repository.private }}
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          REPOSITORY: ${{ github.repository }}
+          CODEQL_UPLOAD_OVERRIDE: ${{ vars.CODEQL_UPLOAD }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$PR_HEAD_REPOSITORY" != "$REPOSITORY" ]; then
+            echo "mode=never" >> "$GITHUB_OUTPUT"
+            echo "reason=Fork pull requests cannot upload CodeQL results with the default workflow token." >> "$GITHUB_OUTPUT"
+          elif [ "$IS_PRIVATE_REPOSITORY" = "true" ] && [ "$CODEQL_UPLOAD_OVERRIDE" != "always" ]; then
+            echo "mode=never" >> "$GITHUB_OUTPUT"
+            echo "reason=Private repositories need GitHub code scanning enabled before SARIF upload works. Set repository variable CODEQL_UPLOAD=always after enabling it." >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=always" >> "$GITHUB_OUTPUT"
+            echo "reason=CodeQL results will be uploaded to GitHub code scanning." >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report CodeQL upload mode
+        run: |
+          echo "CodeQL upload mode: ${{ steps.upload-mode.outputs.mode }}"
+          echo "${{ steps.upload-mode.outputs.reason }}"
+
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@v3
+        with:
+          upload: ${{ steps.upload-mode.outputs.mode }}
+
+      - name: Archive CodeQL SARIF
+        if: steps.upload-mode.outputs.mode == 'never'
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-sarif-${{ matrix.language }}
+          path: ../results/*.sarif
+          if-no-files-found: warn
