@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -74,7 +74,7 @@ jobs:
 
       - name: Check out repository
         if: steps.npm-auth.outputs.enabled == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
         if: steps.npm-auth.outputs.enabled == 'true'
