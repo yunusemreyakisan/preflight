@@ -96,43 +96,20 @@ Current discovery sources include:
 
 ## Install
 
-### npm
+Preflight is distributed via npm only and requires Node.js 20 or newer.
 
-```bash
-npm install -g @yakisan/preflight
-preflight scan
-```
-
-You can also run it directly without a global install:
+Run it without installing anything globally:
 
 ```bash
 npx @yakisan/preflight scan
 ```
 
-### curl
+Or install the CLI globally:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yunusemreyakisan/preflight/stable/scripts/install.sh | bash
-```
-
-### Go shim
-
-```bash
-go install github.com/yunusemreyakisan/preflight/cmd/preflight@latest
+npm install -g @yakisan/preflight
 preflight scan
 ```
-
-The Go binary is a thin launcher that delegates to the published npm package, so Node.js and npm still need to exist on the machine.
-
-### Homebrew formula
-
-For local installs from this repository:
-
-```bash
-brew install ./Formula/preflight.rb
-```
-
-Use `brew install --HEAD ./Formula/preflight.rb` if you want the latest branch state before the next npm release.
 
 ## Commands
 
@@ -241,17 +218,18 @@ npm run build
 
 ## Releases
 
-Releases are tag-driven:
+Releases are npm-only and tag-driven:
 
 ```bash
+VERSION=0.3.3
 npm run verify
-git tag v0.3.2
+git tag "v$VERSION"
 git push origin stable
-git push origin v0.3.2
+git push origin "v$VERSION"
 ```
 
 Pushing the tag triggers the release workflow, which:
 
 - verifies the tagged build
 - creates a GitHub Release for the same tag
-- publishes to npm when the repository has an `NPM_TOKEN` Actions secret configured
+- publishes the npm package when the repository has an `NPM_TOKEN` Actions secret configured

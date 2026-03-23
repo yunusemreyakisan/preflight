@@ -1,7 +1,7 @@
 {
   "name": "@yakisan/preflight",
-  "version": "0.3.2",
-  "description": "CLI for detecting App Store submission risk from local iOS project files before review.",
+  "version": "0.3.3",
+  "description": "npm CLI for App Store submission risk checks from local iOS project files.",
   "author": "yunusemreyakisan",
   "license": "MIT",
   "homepage": "https://github.com/yunusemreyakisan/preflight#readme",
