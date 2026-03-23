@@ -27,7 +27,7 @@ const englishMessages: MessageCatalog = {
   "cli.option.plain": "Disable branded terminal formatting",
   "cli.option.strict": "Treat medium risk as a blocking failure",
   "cli.option.force": "Overwrite the target file if it already exists",
-  "cli.option.output": "Output path for the generated config",
+  "cli.option.output": "Output path for the generated override file",
   "cli.error.unexpected": "Preflight failed: {message}",
   "cli.error.langFallback":
     "Unsupported language `{requested}`. Falling back to English.",
@@ -410,7 +410,7 @@ const turkishMessages: MessageCatalog = {
   "cli.option.plain": "Branded terminal bicimini kapat",
   "cli.option.strict": "Orta riski engelleyici hata say",
   "cli.option.force": "Hedef dosya varsa ustune yaz",
-  "cli.option.output": "Uretilecek config dosya yolu",
+  "cli.option.output": "Uretilecek override dosya yolu",
   "cli.error.unexpected": "Preflight basarisiz oldu: {message}",
   "cli.error.langFallback":
     "Desteklenmeyen dil `{requested}`. Inglizceye geri donuluyor.",
@@ -777,10 +777,10 @@ const turkishMessages: MessageCatalog = {
 const germanMessages: MessageCatalog = {
   "cli.description": "CI-taugliche Risikoanalyse fuer App-Store-Einreichungen.",
   "cli.option.lang": "Ausgabesprache",
-  "command.scan.description": "Vollstaendigen lokalen Risiko-Scan ausfuehren.",
+  "command.scan.description": "Einen lokalen, auto-discovery-first Risiko-Scan ausfuehren.",
   "command.reviewer-pack.description": "Nur das Reviewer-Pack pruefen und erzeugen.",
   "command.rules.description": "Gebundelte aktive Regeln auflisten.",
-  "command.init.description": "Eine Startkonfiguration erstellen.",
+  "command.init.description": "Eine optionale Preflight-Override-Vorlage erstellen.",
   "output.scan.title": "PREFLIGHT SCAN-ERGEBNISSE",
   "output.reviewerPack.title": "REVIEWER-PAKET",
   "output.rules.title": "AKTIVE REGELN",
@@ -799,11 +799,11 @@ const germanMessages: MessageCatalog = {
 const frenchMessages: MessageCatalog = {
   "cli.description": "Moteur de risque pour soumission App Store integre au CI.",
   "cli.option.lang": "Langue de sortie",
-  "command.scan.description": "Executer une analyse locale complete du risque.",
+  "command.scan.description": "Executer une analyse locale auto-discovery-first du risque.",
   "command.reviewer-pack.description":
     "Valider et generer uniquement le pack reviewer.",
   "command.rules.description": "Lister les regles actives embarquees.",
-  "command.init.description": "Creer une configuration de depart.",
+  "command.init.description": "Creer un modele optionnel d'override Preflight.",
   "output.scan.title": "RESULTATS PREFLIGHT",
   "output.reviewerPack.title": "PACK REVIEWER",
   "output.rules.title": "REGLES ACTIVES",
@@ -822,11 +822,11 @@ const frenchMessages: MessageCatalog = {
 const spanishMessages: MessageCatalog = {
   "cli.description": "Motor de riesgo para envios al App Store integrado en CI.",
   "cli.option.lang": "Idioma de salida",
-  "command.scan.description": "Ejecutar un analisis local completo de riesgo.",
+  "command.scan.description": "Ejecutar un analisis local auto-discovery-first de riesgo.",
   "command.reviewer-pack.description":
     "Validar y generar solo el reviewer pack.",
   "command.rules.description": "Listar las reglas activas incluidas.",
-  "command.init.description": "Crear una configuracion inicial.",
+  "command.init.description": "Crear una plantilla opcional de override para Preflight.",
   "output.scan.title": "RESULTADOS DE PREFLIGHT",
   "output.reviewerPack.title": "REVIEWER PACK",
   "output.rules.title": "REGLAS ACTIVAS",
@@ -845,11 +845,11 @@ const spanishMessages: MessageCatalog = {
 const italianMessages: MessageCatalog = {
   "cli.description": "Motore di rischio per submission App Store integrato nel CI.",
   "cli.option.lang": "Lingua di output",
-  "command.scan.description": "Esegui una scansione locale completa del rischio.",
+  "command.scan.description": "Esegui una scansione locale auto-discovery-first del rischio.",
   "command.reviewer-pack.description":
     "Valida e genera solo il reviewer pack.",
   "command.rules.description": "Elenca le regole attive incluse.",
-  "command.init.description": "Crea una configurazione iniziale.",
+  "command.init.description": "Crea un modello opzionale di override Preflight.",
   "output.scan.title": "RISULTATI PREFLIGHT",
   "output.reviewerPack.title": "REVIEWER PACK",
   "output.rules.title": "REGOLE ATTIVE",
@@ -868,11 +868,11 @@ const italianMessages: MessageCatalog = {
 const portugueseMessages: MessageCatalog = {
   "cli.description": "Motor de risco para envio ao App Store integrado ao CI.",
   "cli.option.lang": "Idioma de saida",
-  "command.scan.description": "Executar uma analise local completa de risco.",
+  "command.scan.description": "Executar uma analise local auto-discovery-first de risco.",
   "command.reviewer-pack.description":
     "Validar e gerar apenas o reviewer pack.",
   "command.rules.description": "Listar as regras ativas embarcadas.",
-  "command.init.description": "Criar uma configuracao inicial.",
+  "command.init.description": "Criar um modelo opcional de override do Preflight.",
   "output.scan.title": "RESULTADOS DO PREFLIGHT",
   "output.reviewerPack.title": "REVIEWER PACK",
   "output.rules.title": "REGRAS ATIVAS",
@@ -891,11 +891,11 @@ const portugueseMessages: MessageCatalog = {
 const japaneseMessages: MessageCatalog = {
   "cli.description": "CI tonogo App Store shutsugan risk engine.",
   "cli.option.lang": "Shutsuryoku gengo",
-  "command.scan.description": "Furu local risk scan o jikkou",
+  "command.scan.description": "Auto-discovery-first no local risk scan o jikkou",
   "command.reviewer-pack.description":
     "Reviewer pack no kenshou to seisei nomi",
   "command.rules.description": "Bundled active rules o ichiran",
-  "command.init.description": "Shoki config o sakusei",
+  "command.init.description": "Opshon no Preflight override template o sakusei",
   "output.scan.title": "PREFLIGHT SCAN RESULTS",
   "output.reviewerPack.title": "REVIEWER PACK",
   "output.rules.title": "ACTIVE RULES",
@@ -914,11 +914,11 @@ const japaneseMessages: MessageCatalog = {
 const koreanMessages: MessageCatalog = {
   "cli.description": "CI tonghap App Store submit risk engine.",
   "cli.option.lang": "Chulryeok eoneo",
-  "command.scan.description": "Jeonche local risk scan silhaeng",
+  "command.scan.description": "Auto-discovery-first local risk scan silhaeng",
   "command.reviewer-pack.description":
     "Reviewer pack geomsa mit saengseongman silhaeng",
   "command.rules.description": "Bundled active rules moglog pyo si",
-  "command.init.description": "Chogi config saengseong",
+  "command.init.description": "Seontaekjeok Preflight override template saengseong",
   "output.scan.title": "PREFLIGHT SCAN RESULTS",
   "output.reviewerPack.title": "REVIEWER PACK",
   "output.rules.title": "ACTIVE RULES",
@@ -937,11 +937,11 @@ const koreanMessages: MessageCatalog = {
 const chineseMessages: MessageCatalog = {
   "cli.description": "Ji cheng CI de App Store tijiao fengxian yinqing.",
   "cli.option.lang": "Shuchu yuyan",
-  "command.scan.description": "Yunxing wanquan de ben di fengxian saomiao",
+  "command.scan.description": "Yunxing auto-discovery-first de ben di fengxian saomiao",
   "command.reviewer-pack.description":
     "Jin yanzheng bing shengcheng reviewer pack",
   "command.rules.description": "Liechu neizhi de huoyue guize",
-  "command.init.description": "Chuangjian chushi peizhi",
+  "command.init.description": "Chuangjian kexuan de Preflight override muban",
   "output.scan.title": "PREFLIGHT SCAN RESULTS",
   "output.reviewerPack.title": "REVIEWER PACK",
   "output.rules.title": "ACTIVE RULES",
