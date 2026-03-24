@@ -5,7 +5,7 @@
 
 Preflight is a CLI for detecting App Store submission risk from local iOS project files before a build reaches App Review.
 
-It is built for mobile teams that want deterministic, evidence-backed checks in local workflows and CI. Preflight auto-discovers Apple-side project facts, merges an optional sparse override config, and reports what was detected, what was provided by a human, what is still missing, and what changed since the last scan.
+It is built for mobile teams that want deterministic, evidence-backed checks in local workflows and CI. Preflight auto-discovers Apple-side project facts, merges an optional sparse override config, and reports what was detected, what still needs human input, and what changed since the previous scan.
 
 <img width="1280" alt="Preflight scan dashboard with baseline diff and GitHub Actions annotations" src="assets/preflight-hero.svg" />
 
@@ -13,19 +13,12 @@ It is built for mobile teams that want deterministic, evidence-backed checks in 
 npx @yakisan/preflight scan
 ```
 
-## Why Preflight
+## Overview
 
 - Detect App Store submission risk before uploading a build for review
 - Catch missing reviewer-only inputs such as demo accounts, login instructions, and review notes
 - Inspect privacy, metadata, StoreKit, screenshot, and capability signals from local Apple project files
-- Produce human-readable and JSON output that can gate CI and release checklists
-
-## What You Get
-
-- A deterministic risk verdict before you upload a build to App Review
-- Structured evidence showing which values were discovered locally
-- Missing-input reporting for reviewer-only information that still needs a human
-- Reviewer-pack guidance that can be copied into release checklists or CI pipelines
+- Produce human-readable, JSON, baseline-diff, and CI-friendly output
 
 ## Quick Start
 
@@ -53,15 +46,6 @@ Useful first commands:
 - Reviewer-pack only: `npx @yakisan/preflight reviewer-pack`
 - Generate an override template: `npx @yakisan/preflight init`
 
-## How It Works
-
-1. Preflight detects the project type and scans local Apple-side project files.
-2. It builds a partial submission model from discovered facts.
-3. It merges an optional `preflight.config.json`, with user-provided values taking precedence.
-4. It evaluates deterministic rules and returns risk, evidence, missing inputs, and reviewer-pack guidance.
-
-Preflight is auto-discovery-first in `v0.3.x`. The config file is optional and should contain only reviewer-only inputs or deliberate overrides.
-
 ## What Preflight Checks
 
 Preflight evaluates 30 deterministic rules across:
@@ -73,14 +57,6 @@ Preflight evaluates 30 deterministic rules across:
 - StoreKit and monetization readiness
 - Content and age-rating related declarations
 
-Each scan returns:
-
-- `risk_level`, `risk_score`, `blocking_issues`, and `warnings`
-- `discovery.project_type` and discovery source paths
-- Structured `evidence` for major detected values
-- `missing_inputs` for reviewer-only fields that still need human input
-- `reviewer_pack` entries marked as `detected`, `user-provided`, or `missing`
-
 ## Supported Projects and Discovery Sources
 
 Supported project types:
@@ -89,7 +65,7 @@ Supported project types:
 - Flutter iOS through the `ios/` project
 - React Native iOS through the `ios/` project
 
-Discovery currently reads local Apple-side files only. It does not use App Store Connect APIs or environment variables in `v0.3.x`.
+Discovery currently reads local Apple-side files only. It does not use App Store Connect APIs or environment variables.
 
 Current discovery sources include:
 
@@ -102,14 +78,16 @@ Current discovery sources include:
 
 ## Commands
 
-Available commands:
+Core commands:
 
-- `preflight scan`: run a full submission risk scan
-- `preflight reviewer-pack`: output reviewer-pack completeness data
-- `preflight init`: create an optional override template
-- `preflight rules`: list bundled rule coverage and metadata
+| Command | Purpose |
+| --- | --- |
+| `preflight scan` | Run a full submission risk scan |
+| `preflight reviewer-pack` | Validate reviewer-pack completeness only |
+| `preflight init` | Create an optional override template |
+| `preflight rules` | List bundled rules and metadata |
 
-Common flags:
+Key flags:
 
 - `--lang <locale>`: output locale
 - `--config <path>`: path to an optional override file
@@ -141,9 +119,9 @@ English and Turkish currently have full localized messaging. Other bundled local
 
 ## Optional Override Config
 
-`preflight scan` first discovers what it can from local project files, then merges `preflight.config.json` only if the file exists.
+`preflight scan` discovers what it can from local project files first, then merges `preflight.config.json` only if the file exists.
 
-Use the override config for reviewer-only inputs and values that cannot be inferred with confidence from local files. Missing human inputs stay explicitly missing; they are not silently treated as `false`.
+Use the override config only for reviewer-only inputs and deliberate overrides that cannot be inferred reliably from local files.
 
 Minimal example:
 
@@ -175,8 +153,6 @@ Minimal example:
 }
 ```
 
-Fully populated older configs still scan correctly, and legacy aliases continue to be normalized for backward compatibility.
-
 ## Baseline Diffs and PR Annotations
 
 Store a JSON report from one run, then compare future scans against it:
@@ -201,11 +177,7 @@ Use Preflight as a gate in CI:
   run: npx @yakisan/preflight scan --ci --annotations github --json > preflight-report.json
 ```
 
-Risk behavior:
-
-- Any high-severity failure produces `HIGH` risk
-- Medium-severity findings produce `MEDIUM` risk
-- Low-only or clean runs stay `LOW`
+Scan output includes `risk_level`, `risk_score`, `blocking_issues`, `warnings`, discovery evidence, `missing_inputs`, and `reviewer_pack` status.
 
 ## Exit Codes
 

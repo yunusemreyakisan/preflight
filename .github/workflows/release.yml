@@ -60,7 +60,12 @@ jobs:
 
         - Preflight is distributed via npm only.
         - `scan` is auto-discovery-first and uses `preflight.config.json` only for sparse overrides.
-        - Output includes risk, evidence, missing inputs, and reviewer-pack guidance for local workflows and CI.
+        - Output includes risk, evidence, missing inputs, reviewer-pack guidance, baseline diffs, and GitHub Actions annotations for local workflows and CI.
+
+        ## CI Highlights
+
+        - Compare scans against a saved JSON baseline with `preflight scan --baseline preflight-report.json`
+        - Emit workflow annotations with `preflight scan --annotations github`
 
         ## Requirements
 
