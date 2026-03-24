@@ -2,8 +2,8 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - stable
 
 concurrency:
   group: release-${{ github.ref }}
@@ -27,10 +27,6 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Ensure tag matches package version
-        run: |
-          node -e "const pkg = require('./package.json'); const tag = process.env.GITHUB_REF_NAME.replace(/^v/, ''); if (pkg.version !== tag) { console.error('Tag version does not match package.json version.'); console.error('tag=' + tag + ' package=' + pkg.version); process.exit(1); }"
-
       - name: Install dependencies
         run: npm ci
 
@@ -38,43 +34,56 @@ jobs:
         run: npm run verify
 
   publish-github-release:
-    name: Publish GitHub Release
+    name: Sync GitHub Releases
     needs: verify
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      RELEASE_KEEP_VERSION_COUNT: "2"
+      RELEASE_BODY: |
+        ## Install
+
+        ```bash
+        npx @yakisan/preflight scan
+        ```
+
+        Or install the CLI globally:
+
+        ```bash
+        npm install -g @yakisan/preflight
+        preflight scan
+        ```
+
+        ## Release Notes
+
+        - Preflight is distributed via npm only.
+        - `scan` is auto-discovery-first and uses `preflight.config.json` only for sparse overrides.
+        - Output includes risk, evidence, missing inputs, and reviewer-pack guidance for local workflows and CI.
+
+        ## Requirements
+
+        - Node.js 20 or newer
+        - Legacy `curl`, Go shim, and Homebrew install paths are no longer supported
 
     steps:
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
         with:
-          name: ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
-          body: |
-            ## Install
+          node-version: 22
+          cache: npm
 
-            ```bash
-            npx @yakisan/preflight scan
-            ```
+      - name: Install dependencies
+        run: npm ci
 
-            Or install the CLI globally:
-
-            ```bash
-            npm install -g @yakisan/preflight
-            preflight scan
-            ```
-
-            ## Release Notes
-
-            - Preflight is distributed via npm only.
-            - `scan` is auto-discovery-first and uses `preflight.config.json` only for sparse overrides.
-            - Output includes risk, evidence, missing inputs, and reviewer-pack guidance for local workflows and CI.
-
-            ## Requirements
-
-            - Node.js 20 or newer
-            - Legacy `curl`, Go shim, and Homebrew install paths are no longer supported
-          generate_release_notes: true
+      - name: Sync release state
+        env:
+          RELEASE_BODY: ${{ env.RELEASE_BODY }}
+        run: npm run release:sync
 
   publish-npm:
     name: Publish to npm

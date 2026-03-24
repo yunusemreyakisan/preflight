@@ -36,6 +36,7 @@
     "build": "tsup",
     "dev": "tsx src/cli/index.ts scan",
     "lint": "eslint .",
+    "release:sync": "node --import tsx src/release/sync-github-releases.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "verify": "npm run typecheck && npm test && npm run lint && npm run build",

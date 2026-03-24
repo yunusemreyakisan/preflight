@@ -26,6 +26,7 @@ export function runInit(options: InitCommandOptions = {}): RunInitResult {
     };
   }
 
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, createInitConfigTemplate(translator));
 
   return {
@@ -36,4 +37,3 @@ export function runInit(options: InitCommandOptions = {}): RunInitResult {
     outputPath
   };
 }
-

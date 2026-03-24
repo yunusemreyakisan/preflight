@@ -310,4 +310,20 @@ describe("auxiliary commands", () => {
     expect(parsed.app).toBeUndefined();
     expect(parsed.review.demoAccount.username).toBe("reviewer@example.com");
   });
+
+  it("creates missing parent directories for nested init output paths", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+
+    const { outputPath, exitCode } = runInit({
+      cwd: projectDir,
+      outputPath: "configs/release.json",
+      force: true,
+      lang: "en"
+    });
+
+    expect(exitCode).toBe(0);
+    expect(outputPath).toBe(path.join(projectDir, "configs", "release.json"));
+    expect(fs.existsSync(outputPath)).toBe(true);
+  });
 });

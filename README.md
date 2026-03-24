@@ -2,26 +2,22 @@
 
 Preflight is a CLI for detecting App Store submission risk from local iOS project files before a build reaches App Review.
 
-It is built for mobile teams that want deterministic, evidence-backed release checks in local workflows and CI. Preflight auto-discovers Apple-side project facts, merges an optional sparse override config, and reports what is detected, what was provided by a human, and what is still missing.
+It is built for mobile teams that want deterministic, evidence-backed checks in local workflows and CI. Preflight auto-discovers Apple-side project facts, merges an optional sparse override config, and reports what was detected, what was provided by a human, and what is still missing.
 
 ```bash
 npx @yakisan/preflight scan
 ```
 
-Preflight helps answer three practical release questions:
-
-1. Is this build likely to create App Review risk?
-2. What is missing or inconsistent?
-3. What does the reviewer still need from us?
-
-## Why Teams Use Preflight
+## Why Preflight
 
 - Detect App Store submission risk before uploading a build for review
 - Catch missing reviewer-only inputs such as demo accounts, login instructions, and review notes
 - Inspect privacy, metadata, StoreKit, screenshot, and capability signals from local Apple project files
-- Produce human-readable and JSON output that can gate CI or release checklists
+- Produce human-readable and JSON output that can gate CI and release checklists
 
 ## Quick Start
+
+Preflight requires Node.js 20 or newer and is distributed through npm.
 
 Run a full scan without creating any config first:
 
@@ -29,23 +25,19 @@ Run a full scan without creating any config first:
 npx @yakisan/preflight scan
 ```
 
-Generate machine-readable output:
+Or install it globally:
 
 ```bash
-npx @yakisan/preflight scan --json
+npm install -g @yakisan/preflight
+preflight scan
 ```
 
-Generate reviewer-pack output only:
+Useful first commands:
 
-```bash
-npx @yakisan/preflight reviewer-pack
-```
-
-If the scan reports missing reviewer-only inputs or you need to override a detected value, create an optional override template:
-
-```bash
-npx @yakisan/preflight init
-```
+- Full scan: `npx @yakisan/preflight scan`
+- Machine-readable output: `npx @yakisan/preflight scan --json`
+- Reviewer-pack only: `npx @yakisan/preflight reviewer-pack`
+- Generate an override template: `npx @yakisan/preflight init`
 
 ## How It Works
 
@@ -54,7 +46,7 @@ npx @yakisan/preflight init
 3. It merges an optional `preflight.config.json`, with user-provided values taking precedence.
 4. It evaluates deterministic rules and returns risk, evidence, missing inputs, and reviewer-pack guidance.
 
-Preflight is auto-discovery-first in `v0.3.x`. The config file is optional and should only contain reviewer-only inputs or deliberate overrides.
+Preflight is auto-discovery-first in `v0.3.x`. The config file is optional and should contain only reviewer-only inputs or deliberate overrides.
 
 ## What Preflight Checks
 
@@ -67,11 +59,11 @@ Preflight evaluates 30 deterministic rules across:
 - StoreKit and monetization readiness
 - Content and age-rating related declarations
 
-The scan output includes:
+Each scan returns:
 
 - `risk_level`, `risk_score`, `blocking_issues`, and `warnings`
 - `discovery.project_type` and discovery source paths
-- structured `evidence` for major detected values
+- Structured `evidence` for major detected values
 - `missing_inputs` for reviewer-only fields that still need human input
 - `reviewer_pack` entries marked as `detected`, `user-provided`, or `missing`
 
@@ -79,7 +71,7 @@ The scan output includes:
 
 Supported project types:
 
-- native iOS
+- Native iOS
 - Flutter iOS through the `ios/` project
 - React Native iOS through the `ios/` project
 
@@ -89,36 +81,19 @@ Current discovery sources include:
 
 - `Info.plist`
 - `.xcodeproj/project.pbxproj`
-- entitlements files
+- Entitlements files
 - `PrivacyInfo.xcprivacy`
 - `.storekit`
-- screenshot folders such as `fastlane/screenshots`
-
-## Install
-
-Preflight is distributed via npm only and requires Node.js 20 or newer.
-
-Run it without installing anything globally:
-
-```bash
-npx @yakisan/preflight scan
-```
-
-Or install the CLI globally:
-
-```bash
-npm install -g @yakisan/preflight
-preflight scan
-```
+- Screenshot folders such as `fastlane/screenshots`
 
 ## Commands
 
 Available commands:
 
-- `preflight scan`
-- `preflight init`
-- `preflight reviewer-pack`
-- `preflight rules`
+- `preflight scan`: run a full submission risk scan
+- `preflight reviewer-pack`: output reviewer-pack completeness data
+- `preflight init`: create an optional override template
+- `preflight rules`: list bundled rule coverage and metadata
 
 Common flags:
 
@@ -188,16 +163,17 @@ Fully populated older configs still scan correctly, and legacy aliases continue 
 
 ## CI Example
 
-```yaml
-- name: Preflight Scan
-  run: npx @yakisan/preflight scan --ci --json
+Use Preflight as a gate in CI:
+
+```bash
+npx @yakisan/preflight scan --json
 ```
 
 Risk behavior:
 
-- any high-severity failure produces `HIGH` risk
-- medium-severity findings produce `MEDIUM` risk
-- low-only or clean runs stay `LOW`
+- Any high-severity failure produces `HIGH` risk
+- Medium-severity findings produce `MEDIUM` risk
+- Low-only or clean runs stay `LOW`
 
 ## Exit Codes
 
@@ -206,30 +182,3 @@ Risk behavior:
 - `2`: high risk or blocked release
 
 With `preflight scan --strict`, `MEDIUM` risk also exits with `2`.
-
-## Development
-
-```bash
-npm run typecheck
-npm test
-npm run lint
-npm run build
-```
-
-## Releases
-
-Releases are npm-only and tag-driven:
-
-```bash
-VERSION=$(node -p "require('./package.json').version")
-npm run verify
-git tag "v$VERSION"
-git push origin stable
-git push origin "v$VERSION"
-```
-
-Pushing the tag triggers the release workflow, which:
-
-- verifies the tagged build
-- creates a GitHub Release for the same tag
-- publishes the npm package when the repository has an `NPM_TOKEN` Actions secret configured
