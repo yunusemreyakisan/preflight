@@ -9,7 +9,7 @@ export default defineConfig([
     },
     format: ["cjs"],
     outDir: "dist",
-    sourcemap: true,
+    sourcemap: false,
     target: "node22"
   },
   {
@@ -20,11 +20,10 @@ export default defineConfig([
     },
     format: ["cjs"],
     outDir: "dist",
-    sourcemap: true,
+    sourcemap: false,
     target: "node22",
     banner: {
       js: "#!/usr/bin/env node"
     }
   }
 ]);
-
