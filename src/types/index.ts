@@ -12,6 +12,7 @@ export type RuleCategory =
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 export type HumanOutputMode = "plain" | "branded";
 export type FieldSource = "default" | "discovered" | "config";
+export type AnnotationTarget = "github";
 export type ProjectType =
   | "native-ios"
   | "flutter-ios"
@@ -170,11 +171,37 @@ export interface RiskReport {
   passed_checks: PassedCheck[];
 }
 
+export interface BaselineIssueDiff {
+  new_ids: string[];
+  resolved_ids: string[];
+}
+
+export interface BaselineMissingInputDiff {
+  new_keys: string[];
+  resolved_keys: string[];
+}
+
+export interface BaselineComparisonSummary {
+  new_items: number;
+  resolved_items: number;
+}
+
+export interface BaselineComparison {
+  path: string;
+  baseline_scanned_at?: string;
+  has_changes: boolean;
+  summary: BaselineComparisonSummary;
+  blocking_issues: BaselineIssueDiff;
+  warnings: BaselineIssueDiff;
+  missing_inputs: BaselineMissingInputDiff;
+}
+
 export interface ScanResult extends RiskReport {
   reviewer_pack: ReviewerPackReport;
   discovery: DiscoveryReport;
   evidence: DiscoveryEvidence[];
   missing_inputs: MissingInput[];
+  baseline?: BaselineComparison;
   rule_coverage_note: string;
   exit_code: number;
   locale: SupportedLocale;
@@ -188,6 +215,8 @@ export interface ScanCommandOptions {
   cwd?: string;
   ci?: boolean;
   json?: boolean;
+  baselinePath?: string;
+  annotations?: AnnotationTarget | string;
   plain?: boolean;
   strict?: boolean;
   lang?: string;

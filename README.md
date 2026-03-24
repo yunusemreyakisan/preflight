@@ -1,8 +1,13 @@
 # Preflight
 
+[![CI](https://github.com/yunusemreyakisan/preflight/actions/workflows/ci.yml/badge.svg)](https://github.com/yunusemreyakisan/preflight/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/yunusemreyakisan/preflight?display_name=tag)](https://github.com/yunusemreyakisan/preflight/releases)
+
 Preflight is a CLI for detecting App Store submission risk from local iOS project files before a build reaches App Review.
 
-It is built for mobile teams that want deterministic, evidence-backed checks in local workflows and CI. Preflight auto-discovers Apple-side project facts, merges an optional sparse override config, and reports what was detected, what was provided by a human, and what is still missing.
+It is built for mobile teams that want deterministic, evidence-backed checks in local workflows and CI. Preflight auto-discovers Apple-side project facts, merges an optional sparse override config, and reports what was detected, what was provided by a human, what is still missing, and what changed since the last scan.
+
+<img width="1280" alt="Preflight scan dashboard with baseline diff and GitHub Actions annotations" src="assets/preflight-hero.svg" />
 
 ```bash
 npx @yakisan/preflight scan
@@ -14,6 +19,13 @@ npx @yakisan/preflight scan
 - Catch missing reviewer-only inputs such as demo accounts, login instructions, and review notes
 - Inspect privacy, metadata, StoreKit, screenshot, and capability signals from local Apple project files
 - Produce human-readable and JSON output that can gate CI and release checklists
+
+## What You Get
+
+- A deterministic risk verdict before you upload a build to App Review
+- Structured evidence showing which values were discovered locally
+- Missing-input reporting for reviewer-only information that still needs a human
+- Reviewer-pack guidance that can be copied into release checklists or CI pipelines
 
 ## Quick Start
 
@@ -36,6 +48,8 @@ Useful first commands:
 
 - Full scan: `npx @yakisan/preflight scan`
 - Machine-readable output: `npx @yakisan/preflight scan --json`
+- Compare with a previous report: `npx @yakisan/preflight scan --baseline preflight-report.json`
+- Emit GitHub Actions annotations: `npx @yakisan/preflight scan --annotations github`
 - Reviewer-pack only: `npx @yakisan/preflight reviewer-pack`
 - Generate an override template: `npx @yakisan/preflight init`
 
@@ -100,6 +114,8 @@ Common flags:
 - `--lang <locale>`: output locale
 - `--config <path>`: path to an optional override file
 - `--json`: machine-readable output
+- `--baseline <path>`: compare the current scan against a previous JSON scan report
+- `--annotations <target>`: emit workflow annotations, currently `github`
 - `--ci`: concise CI output for `scan`
 - `--strict`: treat `MEDIUM` risk as blocking for `scan`
 - `--plain`: disable branded terminal formatting
@@ -161,12 +177,28 @@ Minimal example:
 
 Fully populated older configs still scan correctly, and legacy aliases continue to be normalized for backward compatibility.
 
+## Baseline Diffs and PR Annotations
+
+Store a JSON report from one run, then compare future scans against it:
+
+```bash
+npx @yakisan/preflight scan --json > preflight-report.json
+npx @yakisan/preflight scan --baseline preflight-report.json
+```
+
+For GitHub Actions or pull request workflows, emit annotations directly into the job log:
+
+```bash
+npx @yakisan/preflight scan --annotations github
+```
+
 ## CI Example
 
 Use Preflight as a gate in CI:
 
-```bash
-npx @yakisan/preflight scan --json
+```yaml
+- name: Preflight Scan
+  run: npx @yakisan/preflight scan --ci --annotations github --json > preflight-report.json
 ```
 
 Risk behavior:
@@ -182,3 +214,5 @@ Risk behavior:
 - `2`: high risk or blocked release
 
 With `preflight scan --strict`, `MEDIUM` risk also exits with `2`.
+
+Licensed under the [MIT License](LICENSE).

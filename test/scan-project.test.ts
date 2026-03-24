@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   RULE_REGISTRY,
@@ -213,6 +213,182 @@ describe("scanProject", () => {
     expect(parsed.discovery.sources).toEqual([]);
     expect(parsed.missing_inputs).toEqual([]);
     expect(parsed.evidence).toEqual([]);
+  });
+
+  it("adds a baseline diff when compared with an unchanged previous scan", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const config = buildValidConfig();
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const baselinePath = path.join(projectDir, "baseline.json");
+    fs.writeFileSync(
+      baselinePath,
+      JSON.stringify(scanProject({ cwd: projectDir }), null, 2)
+    );
+
+    const result = scanProject({
+      cwd: projectDir,
+      baselinePath: "baseline.json"
+    });
+
+    expect(result.baseline).toBeDefined();
+    expect(result.baseline?.has_changes).toBe(false);
+    expect(result.baseline?.summary).toEqual({
+      new_items: 0,
+      resolved_items: 0
+    });
+  });
+
+  it("reports new findings against a previous baseline scan", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const config = buildValidConfig();
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const baselinePath = path.join(projectDir, "baseline.json");
+    fs.writeFileSync(
+      baselinePath,
+      JSON.stringify(scanProject({ cwd: projectDir }), null, 2)
+    );
+
+    config.metadata.description = "Better than Spotify for App Review readiness.";
+    config.metadata.localizations[0].description = config.metadata.description;
+    config.review.notes = "";
+    writeConfig(projectDir, config);
+    fs.rmSync(path.join(projectDir, "assets", "iphone-6.5-1.png"));
+
+    const result = scanProject({
+      cwd: projectDir,
+      baselinePath: baselinePath
+    });
+
+    expect(result.baseline?.has_changes).toBe(true);
+    expect(result.baseline?.blocking_issues.new_ids).toContain("META_002");
+    expect(result.baseline?.warnings.new_ids).toContain("META_003");
+    expect(result.baseline?.missing_inputs.new_keys).toContain("review.notes");
+  });
+
+  it("reports resolved findings against a previous baseline scan", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const config = buildValidConfig();
+    config.metadata.description = "Better than Spotify for App Review readiness.";
+    config.metadata.localizations[0].description = config.metadata.description;
+    config.review.notes = "";
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+    fs.rmSync(path.join(projectDir, "assets", "iphone-6.5-1.png"));
+
+    const baselinePath = path.join(projectDir, "baseline.json");
+    fs.writeFileSync(
+      baselinePath,
+      JSON.stringify(scanProject({ cwd: projectDir }), null, 2)
+    );
+
+    const fixedConfig = buildValidConfig();
+    writeConfig(projectDir, fixedConfig);
+    writeScreenshots(
+      projectDir,
+      fixedConfig.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const result = scanProject({
+      cwd: projectDir,
+      baselinePath: baselinePath
+    });
+
+    expect(result.baseline?.has_changes).toBe(true);
+    expect(result.baseline?.blocking_issues.resolved_ids).toContain("META_002");
+    expect(result.baseline?.warnings.resolved_ids).toContain("META_003");
+    expect(result.baseline?.missing_inputs.resolved_keys).toContain("review.notes");
+  });
+
+  it("fails clearly when the baseline report is missing", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const config = buildValidConfig();
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    expect(() =>
+      runScan({
+        cwd: projectDir,
+        baselinePath: "missing-baseline.json"
+      })
+    ).toThrowError("Baseline report was not found");
+  });
+
+  it("fails clearly when the baseline report is invalid JSON", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const config = buildValidConfig();
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+    fs.writeFileSync(path.join(projectDir, "baseline.json"), "not-json");
+
+    expect(() =>
+      runScan({
+        cwd: projectDir,
+        baselinePath: "baseline.json"
+      })
+    ).toThrowError("is not valid JSON");
+  });
+
+  it("emits GitHub annotations to stderr without breaking JSON output", () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const config = buildValidConfig();
+    config.metadata.description = "Better than Spotify for App Review readiness.";
+    config.metadata.localizations[0].description = config.metadata.description;
+    config.review.notes = "";
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+    fs.rmSync(path.join(projectDir, "assets", "iphone-6.5-1.png"));
+
+    const stderrChunks: string[] = [];
+    const stderrSpy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(((chunk: string | Uint8Array) => {
+        stderrChunks.push(String(chunk));
+        return true;
+      }) as typeof process.stderr.write);
+
+    try {
+      const { output } = runScan({
+        cwd: projectDir,
+        json: true,
+        annotations: "github"
+      });
+
+      expect(() => JSON.parse(output)).not.toThrow();
+      expect(stderrChunks.join("")).toContain("::error");
+      expect(stderrChunks.join("")).toContain("::warning");
+      expect(stderrChunks.join("")).toContain("META_002");
+      expect(stderrChunks.join("")).toContain("review.notes");
+    } finally {
+      stderrSpy.mockRestore();
+    }
   });
 
   it("renders the branded scan layout when requested", () => {

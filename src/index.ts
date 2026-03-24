@@ -38,6 +38,11 @@ export {
 } from "./scanner/scan-project";
 export { buildScanInput, collectMissingInputs } from "./scanner/build-scan-input";
 export type {
+  AnnotationTarget,
+  BaselineComparison,
+  BaselineComparisonSummary,
+  BaselineIssueDiff,
+  BaselineMissingInputDiff,
   ConfigWarning,
   DiscoveryEvidence,
   DiscoveryReport,

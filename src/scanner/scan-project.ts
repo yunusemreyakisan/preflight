@@ -16,6 +16,7 @@ import { evaluateReviewerPack } from "../reviewer-pack/evaluate-reviewer-pack";
 import { assessRisk, getExitCode } from "../risk/assess-risk";
 import { evaluateRuleRegistry, RULE_REGISTRY } from "../rules/registry";
 import { buildScanInput, collectMissingInputs } from "./build-scan-input";
+import { compareAgainstBaseline } from "./compare-baseline";
 import type {
   DiscoveryReport,
   Issue,
@@ -112,6 +113,25 @@ function buildFailureResult(
   };
 }
 
+function withBaselineComparison(
+  result: ScanResult,
+  options: Pick<ScanCommandOptions, "baselinePath" | "cwd">,
+  translator: Translator
+): ScanResult {
+  if (!options.baselinePath) {
+    return result;
+  }
+
+  return {
+    ...result,
+    baseline: compareAgainstBaseline(result, {
+      baselinePath: options.baselinePath,
+      cwd: options.cwd,
+      translator
+    })
+  };
+}
+
 function prepareScanContext(
   options: Pick<ScanCommandOptions, "cwd" | "configPath" | "lang">
 ): PreparedScanContext {
@@ -195,7 +215,11 @@ export function scanProject(options: ScanCommandOptions = {}): ScanResult {
   const preparation = prepareScanContext(options);
 
   if (!preparation.ok) {
-    return buildFailureResult(preparation);
+    return withBaselineComparison(
+      buildFailureResult(preparation),
+      options,
+      preparation.translator
+    );
   }
 
   const ruleResults = evaluateRuleRegistry(preparation.input, preparation.translator);
@@ -209,20 +233,24 @@ export function scanProject(options: ScanCommandOptions = {}): ScanResult {
     missingInputs
   });
 
-  return {
-    ...risk,
-    primary_reason: risk.primary_reason ?? missingInputs[0]?.message,
-    reviewer_pack: reviewerPack,
-    discovery: preparation.discovery,
-    evidence: preparation.discovery.evidence,
-    missing_inputs: missingInputs,
-    rule_coverage_note: getCoverageNote(preparation.translator),
-    exit_code: getExitCode(risk.risk_level, options.strict),
-    locale: preparation.translator.locale,
-    scanned_at: new Date().toISOString(),
-    config_path: preparation.configPath,
-    config_warnings: preparation.configWarnings
-  };
+  return withBaselineComparison(
+    {
+      ...risk,
+      primary_reason: risk.primary_reason ?? missingInputs[0]?.message,
+      reviewer_pack: reviewerPack,
+      discovery: preparation.discovery,
+      evidence: preparation.discovery.evidence,
+      missing_inputs: missingInputs,
+      rule_coverage_note: getCoverageNote(preparation.translator),
+      exit_code: getExitCode(risk.risk_level, options.strict),
+      locale: preparation.translator.locale,
+      scanned_at: new Date().toISOString(),
+      config_path: preparation.configPath,
+      config_warnings: preparation.configWarnings
+    },
+    options,
+    preparation.translator
+  );
 }
 
 export function renderScanResult(

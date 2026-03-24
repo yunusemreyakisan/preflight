@@ -24,6 +24,8 @@ describe("cli help", () => {
     expect(globalHelp).toContain("--plain");
     expect(scanHelp).toContain("Run an auto-discovery-first local submission risk scan.");
     expect(scanHelp).toContain("Path to an optional preflight override file");
+    expect(scanHelp).toContain("--baseline <path>");
+    expect(scanHelp).toContain("--annotations <target>");
     expect(initHelp).toContain("Create an optional preflight override template.");
   });
 

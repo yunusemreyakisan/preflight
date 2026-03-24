@@ -317,49 +317,44 @@ export async function syncGitHubReleasesFromEnv(): Promise<void> {
     `syncing releases for ${plan.versionTag}; retaining ${plan.retainedVersionTags.join(", ")}\n`
   );
 
-  if (plan.latestReleaseToDelete) {
-    await client.deleteRelease(plan.latestReleaseToDelete.id);
-    process.stdout.write(`deleted release ${plan.latestReleaseToDelete.tagName}\n`);
+  if (plan.currentVersionReleaseToDelete) {
+    await client.deleteRelease(plan.currentVersionReleaseToDelete.id);
+    process.stdout.write(
+      `deleted release ${plan.currentVersionReleaseToDelete.tagName}\n`
+    );
   }
 
-  if (plan.latestTagToDelete) {
+  if (plan.currentVersionTagToDelete) {
+    await client.deleteTag(plan.versionTag);
+    process.stdout.write(`deleted tag ${plan.versionTag}\n`);
+  }
+
+  if (plan.legacyLatestReleaseToDelete) {
+    await client.deleteRelease(plan.legacyLatestReleaseToDelete.id);
+    process.stdout.write(
+      `deleted legacy release ${plan.legacyLatestReleaseToDelete.tagName}\n`
+    );
+  }
+
+  if (plan.legacyLatestTagToDelete) {
     await client.deleteTag("latest");
-    process.stdout.write("deleted tag latest\n");
+    process.stdout.write("deleted legacy tag latest\n");
   }
 
-  const latestBody = await buildReleaseBody(
+  const versionBody = await buildReleaseBody(
     client,
-    plan.latestReleaseToCreate,
+    plan.currentVersionReleaseToCreate,
     targetCommitish,
     releaseBodyPrefix
   );
   await client.createRelease({
-    tagName: plan.latestReleaseToCreate.tagName,
-    name: plan.latestReleaseToCreate.name,
-    body: latestBody,
-    makeLatest: plan.latestReleaseToCreate.makeLatest,
+    tagName: plan.currentVersionReleaseToCreate.tagName,
+    name: plan.currentVersionReleaseToCreate.name,
+    body: versionBody,
+    makeLatest: plan.currentVersionReleaseToCreate.makeLatest,
     targetCommitish
   });
-  process.stdout.write("created release latest\n");
-
-  if (plan.versionReleaseToCreate) {
-    const versionBody = await buildReleaseBody(
-      client,
-      plan.versionReleaseToCreate,
-      targetCommitish,
-      releaseBodyPrefix
-    );
-    await client.createRelease({
-      tagName: plan.versionReleaseToCreate.tagName,
-      name: plan.versionReleaseToCreate.name,
-      body: versionBody,
-      makeLatest: plan.versionReleaseToCreate.makeLatest,
-      targetCommitish
-    });
-    process.stdout.write(`created release ${plan.versionReleaseToCreate.tagName}\n`);
-  } else {
-    process.stdout.write(`${plan.versionTag} already exists; skipping versioned release\n`);
-  }
+  process.stdout.write(`created release ${plan.currentVersionReleaseToCreate.tagName}\n`);
 
   for (const release of plan.staleVersionReleasesToDelete) {
     await client.deleteRelease(release.id);

@@ -22,10 +22,11 @@ export interface PlannedReleaseDeletion {
 
 export interface ReleaseSyncPlan {
   versionTag: string;
-  latestReleaseToDelete?: PlannedReleaseDeletion;
-  latestTagToDelete: boolean;
-  latestReleaseToCreate: PlannedReleaseMutation;
-  versionReleaseToCreate?: PlannedReleaseMutation;
+  currentVersionReleaseToDelete?: PlannedReleaseDeletion;
+  currentVersionTagToDelete: boolean;
+  legacyLatestReleaseToDelete?: PlannedReleaseDeletion;
+  legacyLatestTagToDelete: boolean;
+  currentVersionReleaseToCreate: PlannedReleaseMutation;
   staleVersionReleasesToDelete: PlannedReleaseDeletion[];
   staleVersionTagsToDelete: string[];
   retainedVersionTags: string[];
@@ -73,13 +74,15 @@ export function buildReleaseSyncPlan(
   const keepVersionReleaseCount = options.keepVersionReleaseCount ?? 2;
   const versionTag = `v${options.version}`;
   const managedVersionReleases = sortManagedVersionReleases(options.existingReleases);
-  const latestRelease = options.existingReleases.find(
-    (release) => !release.draft && release.tagName === "latest"
-  );
-  const versionReleaseExists = managedVersionReleases.some(
+  const currentVersionRelease = managedVersionReleases.find(
     (release) => release.tagName === versionTag
   );
-  const newestExistingVersionTag = managedVersionReleases[0]?.tagName;
+  const legacyLatestRelease = options.existingReleases.find(
+    (release) => !release.draft && release.tagName === "latest"
+  );
+  const previousVersionTag = managedVersionReleases.find(
+    (release) => release.tagName !== versionTag
+  );
 
   const retainedVersionTags = unique([
     versionTag,
@@ -102,27 +105,26 @@ export function buildReleaseSyncPlan(
 
   return {
     versionTag,
-    latestReleaseToDelete: latestRelease
+    currentVersionReleaseToDelete: currentVersionRelease
       ? {
-          id: latestRelease.id,
-          tagName: latestRelease.tagName
+          id: currentVersionRelease.id,
+          tagName: currentVersionRelease.tagName
         }
       : undefined,
-    latestTagToDelete: options.existingTagNames.includes("latest"),
-    latestReleaseToCreate: {
-      tagName: "latest",
-      name: "latest",
+    currentVersionTagToDelete: options.existingTagNames.includes(versionTag),
+    legacyLatestReleaseToDelete: legacyLatestRelease
+      ? {
+          id: legacyLatestRelease.id,
+          tagName: legacyLatestRelease.tagName
+        }
+      : undefined,
+    legacyLatestTagToDelete: options.existingTagNames.includes("latest"),
+    currentVersionReleaseToCreate: {
+      tagName: versionTag,
+      name: versionTag,
       makeLatest: true,
-      previousTagName: versionReleaseExists ? versionTag : newestExistingVersionTag
+      previousTagName: previousVersionTag?.tagName
     },
-    versionReleaseToCreate: versionReleaseExists
-      ? undefined
-      : {
-          tagName: versionTag,
-          name: versionTag,
-          makeLatest: false,
-          previousTagName: newestExistingVersionTag
-        },
     staleVersionReleasesToDelete,
     staleVersionTagsToDelete,
     retainedVersionTags

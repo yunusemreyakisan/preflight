@@ -10,6 +10,8 @@ type CommandOptions = {
   config?: string;
   ci?: boolean;
   json?: boolean;
+  baseline?: string;
+  annotations?: string;
   plain?: boolean;
   strict?: boolean;
   lang?: string;
@@ -42,6 +44,8 @@ export function buildProgram(argv = process.argv): Command {
     .option("-c, --config <path>", translator.t("cli.option.config"))
     .option("--ci", translator.t("cli.option.ci"))
     .option("--json", translator.t("cli.option.json"))
+    .option("--baseline <path>", translator.t("cli.option.baseline"))
+    .option("--annotations <target>", translator.t("cli.option.annotations"))
     .option("--strict", translator.t("cli.option.strict"))
     .action((options: CommandOptions, command: Command) => {
       const globalOptions = command.optsWithGlobals<CommandOptions>();
@@ -49,6 +53,8 @@ export function buildProgram(argv = process.argv): Command {
         configPath: options.config,
         ci: options.ci,
         json: options.json,
+        baselinePath: options.baseline,
+        annotations: options.annotations,
         plain: globalOptions.plain,
         strict: options.strict,
         lang: globalOptions.lang

@@ -3,6 +3,7 @@ import chalk from "chalk";
 
 import { RULESET_METADATA } from "../rules/registry";
 import type {
+  BaselineComparison,
   HumanOutputMode,
   Issue,
   MissingInput,
@@ -364,6 +365,92 @@ function formatReviewerPackTemplate(
   return lines;
 }
 
+function formatBaselineValueList(
+  values: string[],
+  translator: Translator
+): string {
+  return values.length > 0 ? values.join(", ") : translator.t("output.none");
+}
+
+function formatBaselineSection(
+  baseline: BaselineComparison,
+  translator: Translator,
+  mode: HumanOutputMode
+): string[] {
+  const lines = [
+    `  ${colorize(mode, "strong", translator.t("output.baseline.title"))}`,
+    renderLabelValue(
+      translator.t("output.baseline.comparedAgainst"),
+      baseline.path,
+      mode
+    ),
+    renderLabelValue(
+      translator.t("output.baseline.new"),
+      String(baseline.summary.new_items),
+      mode
+    ),
+    renderLabelValue(
+      translator.t("output.baseline.resolved"),
+      String(baseline.summary.resolved_items),
+      mode
+    )
+  ];
+
+  if (baseline.baseline_scanned_at) {
+    lines.splice(
+      2,
+      0,
+      renderLabelValue(
+        translator.t("output.baseline.scannedAt"),
+        baseline.baseline_scanned_at,
+        mode
+      )
+    );
+  }
+
+  if (!baseline.has_changes) {
+    lines.push(`  ${colorize(mode, "muted", translator.t("output.baseline.noChanges"))}`);
+    return lines;
+  }
+
+  const diffRows: Array<[label: string, values: string[]]> = [
+    [
+      translator.t("output.baseline.blockingIssuesNew"),
+      baseline.blocking_issues.new_ids
+    ],
+    [
+      translator.t("output.baseline.blockingIssuesResolved"),
+      baseline.blocking_issues.resolved_ids
+    ],
+    [
+      translator.t("output.baseline.warningsNew"),
+      baseline.warnings.new_ids
+    ],
+    [
+      translator.t("output.baseline.warningsResolved"),
+      baseline.warnings.resolved_ids
+    ],
+    [
+      translator.t("output.baseline.missingInputsNew"),
+      baseline.missing_inputs.new_keys
+    ],
+    [
+      translator.t("output.baseline.missingInputsResolved"),
+      baseline.missing_inputs.resolved_keys
+    ]
+  ];
+
+  diffRows
+    .filter(([, values]) => values.length > 0)
+    .forEach(([label, values]) => {
+      lines.push(
+        renderLabelValue(label, formatBaselineValueList(values, translator), mode)
+      );
+    });
+
+  return lines;
+}
+
 function buildReviewerPackRows(
   reviewerPack: ReviewerPackReport,
   translator: Translator,
@@ -441,6 +528,56 @@ function formatCiScanReport(
         : translator.t("output.incomplete")
     }`
   );
+
+  if (result.baseline) {
+    lines.push(
+      `${translator.t("output.baseline.title")}: ${translator.t("output.baseline.summaryLine", {
+        newCount: result.baseline.summary.new_items,
+        resolvedCount: result.baseline.summary.resolved_items
+      })}`,
+      `${translator.t("output.baseline.comparedAgainst")}: ${result.baseline.path}`
+    );
+
+    if (result.baseline.baseline_scanned_at) {
+      lines.push(
+        `${translator.t("output.baseline.scannedAt")}: ${result.baseline.baseline_scanned_at}`
+      );
+    }
+
+    if (!result.baseline.has_changes) {
+      lines.push(translator.t("output.baseline.noChanges"));
+    } else {
+      const diffLines: Array<[label: string, values: string[]]> = [
+        [
+          translator.t("output.baseline.blockingIssuesNew"),
+          result.baseline.blocking_issues.new_ids
+        ],
+        [
+          translator.t("output.baseline.blockingIssuesResolved"),
+          result.baseline.blocking_issues.resolved_ids
+        ],
+        [translator.t("output.baseline.warningsNew"), result.baseline.warnings.new_ids],
+        [
+          translator.t("output.baseline.warningsResolved"),
+          result.baseline.warnings.resolved_ids
+        ],
+        [
+          translator.t("output.baseline.missingInputsNew"),
+          result.baseline.missing_inputs.new_keys
+        ],
+        [
+          translator.t("output.baseline.missingInputsResolved"),
+          result.baseline.missing_inputs.resolved_keys
+        ]
+      ];
+
+      diffLines
+        .filter(([, values]) => values.length > 0)
+        .forEach(([label, values]) =>
+          lines.push(`${label}: ${formatBaselineValueList(values, translator)}`)
+        );
+    }
+  }
 
   return lines.join("\n");
 }
@@ -551,6 +688,10 @@ function formatStandardScanReport(
     result.missing_inputs.forEach((missingInput) => {
       lines.push(...formatMissingInputBlock(missingInput, translator, mode), "");
     });
+  }
+
+  if (result.baseline) {
+    lines.push("", ...formatBaselineSection(result.baseline, translator, mode));
   }
 
   lines.push(
