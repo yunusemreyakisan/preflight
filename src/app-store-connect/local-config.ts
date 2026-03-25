@@ -10,7 +10,7 @@ import { z } from "zod";
 import type { AppStoreConnectInteractiveRuntime, Translator } from "../types";
 
 export const APP_STORE_CONNECT_API_KEYS_URL =
-  "https://appstoreconnect.apple.com/access/api";
+  "https://appstoreconnect.apple.com/access/integrations/api";
 
 const appStoreConnectLocalConfigSchema = z.object({
   issuerId: z.string().trim().min(1),

@@ -1,6 +1,6 @@
 {
   "name": "@yakisan/preflight",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Catch App Review landmines before submission with a CLI-first risk engine for iOS release teams.",
   "author": "yunusemreyakisan",
   "license": "MIT",
