@@ -32,9 +32,13 @@ function resolveAnnotationTarget(
   );
 }
 
-export function runScan(options: ScanCommandOptions = {}): RunScanResult {
+export async function runScan(options: ScanCommandOptions = {}): Promise<RunScanResult> {
   const annotationTarget = resolveAnnotationTarget(options.annotations, options.lang);
-  const result = scanProject(options);
+  const result = await scanProject({
+    ...options,
+    allowInteractiveAppStoreConnectSetup:
+      options.allowInteractiveAppStoreConnectSetup ?? true
+  });
   const annotationLines =
     annotationTarget === "github" ? formatGithubAnnotations(result) : [];
 

@@ -1,11 +1,16 @@
-import type { ReviewerPackReport, RuleDefinition, RuleVersionMetadata, ScanResult } from "../types";
+import type {
+  ReviewReadinessReport,
+  RuleDefinition,
+  RuleVersionMetadata,
+  ScanResult
+} from "../types";
 
 export function formatJsonReport(result: ScanResult): string {
   return JSON.stringify(result, null, 2);
 }
 
-export function formatReviewerPackJson(reviewerPack: ReviewerPackReport): string {
-  return JSON.stringify(reviewerPack, null, 2);
+export function formatReviewReadinessJson(reviewReadiness: ReviewReadinessReport): string {
+  return JSON.stringify(reviewReadiness, null, 2);
 }
 
 export function formatRulesJson(

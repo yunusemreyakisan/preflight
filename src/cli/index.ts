@@ -2,7 +2,6 @@ import { Command } from "commander";
 
 import { createTranslator, resolveLocaleFromArgv } from "../i18n";
 import { runInit } from "./commands/init";
-import { runReviewerPack } from "./commands/reviewer-pack";
 import { runRules } from "./commands/rules";
 import { runScan } from "./commands/scan";
 
@@ -12,6 +11,7 @@ type CommandOptions = {
   json?: boolean;
   baseline?: string;
   annotations?: string;
+  skipAppStoreConnect?: boolean;
   plain?: boolean;
   strict?: boolean;
   lang?: string;
@@ -46,33 +46,19 @@ export function buildProgram(argv = process.argv): Command {
     .option("--json", translator.t("cli.option.json"))
     .option("--baseline <path>", translator.t("cli.option.baseline"))
     .option("--annotations <target>", translator.t("cli.option.annotations"))
+    .option("--skip-app-store-connect", translator.t("cli.option.skipAppStoreConnect"))
     .option("--strict", translator.t("cli.option.strict"))
-    .action((options: CommandOptions, command: Command) => {
+    .action(async (options: CommandOptions, command: Command) => {
       const globalOptions = command.optsWithGlobals<CommandOptions>();
-      const { output, exitCode } = runScan({
+      const { output, exitCode } = await runScan({
         configPath: options.config,
         ci: options.ci,
         json: options.json,
         baselinePath: options.baseline,
         annotations: options.annotations,
+        skipAppStoreConnect: options.skipAppStoreConnect,
         plain: globalOptions.plain,
         strict: options.strict,
-        lang: globalOptions.lang
-      });
-      printAndSetExitCode(output, exitCode);
-    });
-
-  program
-    .command("reviewer-pack")
-    .description(translator.t("command.reviewer-pack.description"))
-    .option("-c, --config <path>", translator.t("cli.option.config"))
-    .option("--json", translator.t("cli.option.json"))
-    .action((options: CommandOptions, command: Command) => {
-      const globalOptions = command.optsWithGlobals<CommandOptions>();
-      const { output, exitCode } = runReviewerPack({
-        configPath: options.config,
-        json: options.json,
-        plain: globalOptions.plain,
         lang: globalOptions.lang
       });
       printAndSetExitCode(output, exitCode);
@@ -112,19 +98,17 @@ export function buildProgram(argv = process.argv): Command {
   return program;
 }
 
-export function main(argv = process.argv): void {
-  buildProgram(argv).parse(argv);
+export async function main(argv = process.argv): Promise<void> {
+  await buildProgram(argv).parseAsync(argv);
 }
 
 if (require.main === module) {
-  try {
-    main();
-  } catch (error) {
+  void main().catch((error) => {
     const translator = createTranslator(
       resolveLocaleFromArgv(process.argv, process.env.PREFLIGHT_LANG)
     );
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`${translator.t("cli.error.unexpected", { message })}\n`);
     process.exitCode = 2;
-  }
+  });
 }

@@ -11,7 +11,7 @@ function pushIndented(lines: string[], value: string): void {
     });
 }
 
-export function generateReviewerPackTemplate(
+export function generateSuggestedReviewNotes(
   input: ScanInput,
   translator: Translator
 ): string {

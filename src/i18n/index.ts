@@ -26,6 +26,7 @@ const englishMessages: MessageCatalog = {
   "cli.option.json": "Emit JSON output",
   "cli.option.baseline": "Compare against a previous JSON scan report",
   "cli.option.annotations": "Emit workflow annotations (supported: github)",
+  "cli.option.skipAppStoreConnect": "Skip App Store Connect API checks",
   "cli.option.plain": "Disable branded terminal formatting",
   "cli.option.strict": "Treat medium risk as a blocking failure",
   "cli.option.force": "Overwrite the target file if it already exists",
@@ -42,15 +43,14 @@ const englishMessages: MessageCatalog = {
     "Unsupported language `{requested}`. Falling back to English.",
 
   "command.scan.description":
-    "Run an auto-discovery-first local submission risk scan.",
-  "command.reviewer-pack.description": "Validate and generate the reviewer pack only.",
+    "Run an auto-discovery-first submission risk scan with optional App Store Connect checks.",
   "command.rules.description": "List bundled active rules.",
   "command.rules.option.update":
     "Show bundled rule metadata and explain local update status.",
   "command.init.description": "Create an optional preflight override template.",
 
   "output.scan.title": "PREFLIGHT SCAN RESULTS",
-  "output.reviewerPack.title": "REVIEWER PACK",
+  "output.reviewerPack.title": "REVIEW READINESS",
   "output.rules.title": "ACTIVE RULES",
   "output.riskLevel": "Risk Level",
   "output.riskScore": "Risk Score",
@@ -62,14 +62,14 @@ const englishMessages: MessageCatalog = {
   "output.none": "None",
   "output.configPath": "Override Config",
   "output.scannedAt": "Scanned At",
-  "output.reviewerPack.status": "Reviewer Pack Status",
+  "output.reviewerPack.status": "Review Readiness",
   "output.reviewerPack.missing": "Missing",
   "output.reviewerPack.notes": "Notes",
-  "output.reviewerPack.generatedTemplate": "Generated Review Notes Template",
+  "output.reviewerPack.generatedTemplate": "Suggested Review Notes",
   "output.reviewerPack.copyInstruction":
-    "Copy this into App Store Connect -> Review Notes",
-  "output.reviewerPack.complete": "REVIEWER PACK IS COMPLETE",
-  "output.reviewerPack.incomplete": "REVIEWER PACK IS INCOMPLETE",
+    "Review this before pasting into App Store Connect -> Review Notes",
+  "output.reviewerPack.complete": "REVIEW READINESS IS COMPLETE",
+  "output.reviewerPack.incomplete": "REVIEW READINESS IS INCOMPLETE",
   "output.configWarnings": "Config Warnings",
   "output.yes": "YES",
   "output.no": "NO",
@@ -77,7 +77,8 @@ const englishMessages: MessageCatalog = {
   "output.incomplete": "INCOMPLETE",
   "output.brand.tagline": "App Store submission risk engine",
   "output.surface.title": "Submission Surface",
-  "output.surface.reviewerPack": "Reviewer Pack",
+  "output.surface.reviewerPack": "Review Readiness",
+  "output.surface.appStoreConnect": "App Store Connect",
   "output.surface.discovery": "Project Discovery",
   "output.surface.missingInputs": "Missing Human Inputs",
   "output.surface.config": "Config Health",
@@ -105,8 +106,39 @@ const englishMessages: MessageCatalog = {
   "output.baseline.missingInputsResolved": "Resolved Missing Inputs",
   "output.source.config": "user-provided",
   "output.source.discovered": "detected",
+  "output.source.app-store-connect": "App Store Connect",
   "output.source.default": "default",
   "output.source.missing": "missing",
+  "output.appStoreConnect.title": "APP STORE CONNECT",
+  "output.appStoreConnect.statusLabel": "App Store Connect",
+  "output.appStoreConnect.connection": "Connection",
+  "output.appStoreConnect.connection.connected": "CONNECTED",
+  "output.appStoreConnect.connection.skipped": "SKIPPED",
+  "output.appStoreConnect.connection.unavailable": "UNAVAILABLE",
+  "output.appStoreConnect.appId": "App ID",
+  "output.appStoreConnect.bundleId": "Bundle ID",
+  "output.appStoreConnect.version": "Target Version",
+  "output.appStoreConnect.versionSource.editable": "editable",
+  "output.appStoreConnect.versionSource.latest-live": "latest live",
+  "output.appStoreConnect.versionSource.latest-any": "latest available",
+  "output.appStoreConnect.territories": "Available Territories",
+  "output.appStoreConnect.appPriceSchedule": "App Price Schedule",
+  "output.appStoreConnect.reviewAttachments": "Review Attachments",
+  "output.appStoreConnect.summary": "Drift Summary",
+  "output.appStoreConnect.summary.values": "value drifts",
+  "output.appStoreConnect.summary.screenshots": "screenshot drifts",
+  "output.appStoreConnect.summary.iaps": "IAP drifts",
+  "output.appStoreConnect.valueChecks": "Value Checks",
+  "output.appStoreConnect.screenshotChecks": "Screenshot Checks",
+  "output.appStoreConnect.iapChecks": "IAP Checks",
+  "output.appStoreConnect.warnings": "Warnings",
+  "output.appStoreConnect.notes": "Notes",
+  "output.appStoreConnect.missingEnv": "Missing Environment",
+  "output.appStoreConnect.priceSchedule": "Price Schedule",
+  "output.appStoreConnect.status.match": "MATCH",
+  "output.appStoreConnect.status.mismatch": "MISMATCH",
+  "output.appStoreConnect.status.remoteOnly": "REMOTE ONLY",
+  "output.appStoreConnect.status.localOnly": "LOCAL ONLY",
   "output.verdict": "Verdict",
   "output.verdict.ready": "READY TO SUBMIT",
   "output.verdict.review": "REVIEW BEFORE SUBMIT",
@@ -196,6 +228,58 @@ const englishMessages: MessageCatalog = {
     "Premium access path: {value}",
   "reviewerPack.template.noIap":
     "No in-app purchases are required to review core features",
+  "appStoreConnect.note.credentialsMissing":
+    "App Store Connect credentials are not configured. Run `preflight scan` in a local terminal once to complete guided setup, or provide ASC_ISSUER_ID, ASC_KEY_ID, and ASC_PRIVATE_KEY or ASC_PRIVATE_KEY_PATH.",
+  "appStoreConnect.note.disabled": "App Store Connect checks were skipped by CLI flag.",
+  "appStoreConnect.note.localPreparationFailed":
+    "App Store Connect checks were skipped because local scan preparation failed.",
+  "appStoreConnect.note.authenticated":
+    "Authenticated with App Store Connect using environment credentials.",
+  "appStoreConnect.note.authenticatedLocalConfig":
+    "Authenticated with App Store Connect using saved local credentials.",
+  "appStoreConnect.note.localConfigLoaded":
+    "Loaded saved App Store Connect config from {path}.",
+  "appStoreConnect.note.localConfigSaved":
+    "Saved App Store Connect config to {path}.",
+  "appStoreConnect.note.appResolved":
+    "Resolved App Store Connect app {appId} for bundle ID {bundleId}.",
+  "appStoreConnect.note.versionResolved":
+    "Using version {version} [{state}] from {source}.",
+  "appStoreConnect.warning.credentialsIncomplete":
+    "App Store Connect credentials are incomplete. Provide ASC_ISSUER_ID, ASC_KEY_ID, and ASC_PRIVATE_KEY or ASC_PRIVATE_KEY_PATH.",
+  "appStoreConnect.warning.localConfigUnreadable":
+    "Saved App Store Connect config at {path} could not be read: {message}",
+  "appStoreConnect.warning.localConfigInvalid":
+    "Saved App Store Connect config at {path} is invalid: {message}",
+  "appStoreConnect.warning.privateKeyUnreadable":
+    "App Store Connect private key could not be read: {message}",
+  "appStoreConnect.warning.bundleIdMissing":
+    "No bundle ID was available to resolve the App Store Connect app. Set ASC_APP_ID or provide a bundle ID locally.",
+  "appStoreConnect.warning.appNotFound":
+    "The target app could not be found in App Store Connect.",
+  "appStoreConnect.warning.surfaceUnavailable":
+    "App Store Connect surface `{surface}` could not be loaded: {message}",
+  "appStoreConnect.warning.fetchUnavailable":
+    "Global fetch is not available in this runtime, so App Store Connect checks could not run.",
+  "appStoreConnect.warning.setupUnavailableNonInteractive":
+    "Interactive App Store Connect setup is only available in a local terminal. Run `preflight scan` locally once or set ASC_* environment variables.",
+  "appStoreConnect.warning.setupIncomplete":
+    "Interactive App Store Connect setup did not complete because one or more required values were empty.",
+  "appStoreConnect.warning.setupCancelled":
+    "Interactive App Store Connect setup was cancelled.",
+  "appStoreConnect.warning.setupFailed":
+    "Interactive App Store Connect setup failed: {message}",
+  "appStoreConnect.warning.requestFailed":
+    "App Store Connect request failed: {message}",
+  "appStoreConnect.prompt.setupIntroOpened":
+    "No App Store Connect credentials were found. The App Store Connect API Keys page was opened in your browser.\nCreate or download an API key, then enter the values below.\nSaved settings will be written to {path}.\nURL: {url}\n",
+  "appStoreConnect.prompt.setupIntroManual":
+    "No App Store Connect credentials were found. Open the App Store Connect API Keys page, create or download an API key, then enter the values below.\nSaved settings will be written to {path}.\nURL: {url}\n",
+  "appStoreConnect.prompt.issuerId": "Issuer ID:",
+  "appStoreConnect.prompt.keyId": "Key ID:",
+  "appStoreConnect.prompt.privateKeyPath": "Path to the downloaded .p8 key:",
+  "appStoreConnect.prompt.appId":
+    "App ID (optional, press enter to resolve by bundle ID):",
 
   "missing.demoAccount.label": "Demo account",
   "missing.demoAccount.message":
@@ -432,6 +516,7 @@ const turkishMessages: MessageCatalog = {
   "cli.option.json": "JSON cikti uret",
   "cli.option.baseline": "Onceki JSON tarama raporuyla karsilastir",
   "cli.option.annotations": "Workflow annotation ciktilari uret (desteklenen: github)",
+  "cli.option.skipAppStoreConnect": "App Store Connect API kontrollerini atla",
   "cli.option.plain": "Branded terminal bicimini kapat",
   "cli.option.strict": "Orta riski engelleyici hata say",
   "cli.option.force": "Hedef dosya varsa ustune yaz",
@@ -448,16 +533,15 @@ const turkishMessages: MessageCatalog = {
   "cli.error.langFallback":
     "Desteklenmeyen dil `{requested}`. Inglizceye geri donuluyor.",
 
-  "command.scan.description": "Otomatik kesif once yerel gonderim risk taramasini calistir.",
-  "command.reviewer-pack.description":
-    "Sadece reviewer pack dogrulamasi ve uretimini calistir.",
+  "command.scan.description":
+    "Opsiyonel App Store Connect kontrolleriyle otomatik kesif once gonderim risk taramasini calistir.",
   "command.rules.description": "Paketle gelen aktif kurallari listele.",
   "command.rules.option.update":
     "Paketli kural metadata bilgisini ve guncelleme durumunu goster.",
   "command.init.description": "Opsiyonel preflight override sablonu olustur.",
 
   "output.scan.title": "PREFLIGHT TARAMA SONUCLARI",
-  "output.reviewerPack.title": "REVIEWER PACK",
+  "output.reviewerPack.title": "REVIEW READINESS",
   "output.rules.title": "AKTIF KURALLAR",
   "output.riskLevel": "Risk Seviyesi",
   "output.riskScore": "Risk Skoru",
@@ -469,14 +553,14 @@ const turkishMessages: MessageCatalog = {
   "output.none": "Yok",
   "output.configPath": "Override Config",
   "output.scannedAt": "Tarama Zamani",
-  "output.reviewerPack.status": "Reviewer Pack Durumu",
+  "output.reviewerPack.status": "Review Readiness",
   "output.reviewerPack.missing": "Eksikler",
   "output.reviewerPack.notes": "Notlar",
-  "output.reviewerPack.generatedTemplate": "Uretilen Review Notes Sablonu",
+  "output.reviewerPack.generatedTemplate": "Onerilen Review Notes",
   "output.reviewerPack.copyInstruction":
-    "Bunu App Store Connect -> Review Notes alanina kopyalayin",
-  "output.reviewerPack.complete": "REVIEWER PACK TAM",
-  "output.reviewerPack.incomplete": "REVIEWER PACK EKSIK",
+    "Bunu App Store Connect -> Review Notes alanina yapistirmadan once kontrol edin",
+  "output.reviewerPack.complete": "REVIEW READINESS TAM",
+  "output.reviewerPack.incomplete": "REVIEW READINESS EKSIK",
   "output.configWarnings": "Config Uyarilari",
   "output.yes": "EVET",
   "output.no": "HAYIR",
@@ -484,7 +568,8 @@ const turkishMessages: MessageCatalog = {
   "output.incomplete": "EKSIK",
   "output.brand.tagline": "App Store gonderim risk motoru",
   "output.surface.title": "Gonderim Yuzeyi",
-  "output.surface.reviewerPack": "Reviewer Pack",
+  "output.surface.reviewerPack": "Review Readiness",
+  "output.surface.appStoreConnect": "App Store Connect",
   "output.surface.discovery": "Proje Kesfi",
   "output.surface.missingInputs": "Eksik Insan Girdileri",
   "output.surface.config": "Config Sagligi",
@@ -512,8 +597,39 @@ const turkishMessages: MessageCatalog = {
   "output.baseline.missingInputsResolved": "Cozulen Missing Inputs",
   "output.source.config": "kullanici",
   "output.source.discovered": "tespit",
+  "output.source.app-store-connect": "App Store Connect",
   "output.source.default": "varsayilan",
   "output.source.missing": "eksik",
+  "output.appStoreConnect.title": "APP STORE CONNECT",
+  "output.appStoreConnect.statusLabel": "App Store Connect",
+  "output.appStoreConnect.connection": "Baglanti",
+  "output.appStoreConnect.connection.connected": "BAGLI",
+  "output.appStoreConnect.connection.skipped": "ATLANDI",
+  "output.appStoreConnect.connection.unavailable": "ERISILEMIYOR",
+  "output.appStoreConnect.appId": "App ID",
+  "output.appStoreConnect.bundleId": "Bundle ID",
+  "output.appStoreConnect.version": "Hedef Surum",
+  "output.appStoreConnect.versionSource.editable": "duzenlenebilir",
+  "output.appStoreConnect.versionSource.latest-live": "son canli",
+  "output.appStoreConnect.versionSource.latest-any": "son mevcut",
+  "output.appStoreConnect.territories": "Acik Bolgeler",
+  "output.appStoreConnect.appPriceSchedule": "Uygulama Fiyat Takvimi",
+  "output.appStoreConnect.reviewAttachments": "Review Ekleri",
+  "output.appStoreConnect.summary": "Drift Ozeti",
+  "output.appStoreConnect.summary.values": "alan drift",
+  "output.appStoreConnect.summary.screenshots": "screenshot drift",
+  "output.appStoreConnect.summary.iaps": "IAP drift",
+  "output.appStoreConnect.valueChecks": "Alan Kontrolleri",
+  "output.appStoreConnect.screenshotChecks": "Screenshot Kontrolleri",
+  "output.appStoreConnect.iapChecks": "IAP Kontrolleri",
+  "output.appStoreConnect.warnings": "Uyarilar",
+  "output.appStoreConnect.notes": "Notlar",
+  "output.appStoreConnect.missingEnv": "Eksik Ortam Degiskenleri",
+  "output.appStoreConnect.priceSchedule": "Fiyat Takvimi",
+  "output.appStoreConnect.status.match": "ESLESTI",
+  "output.appStoreConnect.status.mismatch": "FARKLI",
+  "output.appStoreConnect.status.remoteOnly": "SADECE REMOTE",
+  "output.appStoreConnect.status.localOnly": "SADECE LOCAL",
   "output.verdict": "Karar",
   "output.verdict.ready": "GONDERIME HAZIR",
   "output.verdict.review": "GONDERIM ONCESI GOZDEN GECIR",
@@ -602,6 +718,55 @@ const turkishMessages: MessageCatalog = {
   "reviewerPack.template.paywallPath": "Premium erisim yolu: {value}",
   "reviewerPack.template.noIap":
     "Ana ozellikleri incelemek icin uygulama ici satin alim gerekmez",
+  "appStoreConnect.note.credentialsMissing":
+    "App Store Connect kimlik bilgileri ayarli degil. Kilavuzlu kurulumu tamamlamak icin `preflight scan` komutunu yerel terminalde bir kez calistirin veya ASC_ISSUER_ID, ASC_KEY_ID ve ASC_PRIVATE_KEY ya da ASC_PRIVATE_KEY_PATH saglayin.",
+  "appStoreConnect.note.disabled":
+    "App Store Connect kontrolleri CLI bayragi ile atlandi.",
+  "appStoreConnect.note.localPreparationFailed":
+    "Yerel hazirlik basarisiz oldugu icin App Store Connect kontrolleri atlandi.",
+  "appStoreConnect.note.authenticated":
+    "App Store Connect'e environment kimlik bilgileriyle baglanildi.",
+  "appStoreConnect.note.authenticatedLocalConfig":
+    "App Store Connect'e kaydedilmis yerel kimlik bilgileriyle baglanildi.",
+  "appStoreConnect.note.localConfigLoaded":
+    "Kaydedilmis App Store Connect ayari {path} konumundan yuklendi.",
+  "appStoreConnect.note.localConfigSaved":
+    "App Store Connect ayari {path} konumuna kaydedildi.",
+  "appStoreConnect.warning.credentialsIncomplete":
+    "App Store Connect kimlik bilgileri eksik. ASC_ISSUER_ID, ASC_KEY_ID ve ASC_PRIVATE_KEY veya ASC_PRIVATE_KEY_PATH saglayin.",
+  "appStoreConnect.warning.localConfigUnreadable":
+    "{path} konumundaki kaydedilmis App Store Connect ayari okunamadi: {message}",
+  "appStoreConnect.warning.localConfigInvalid":
+    "{path} konumundaki kaydedilmis App Store Connect ayari gecersiz: {message}",
+  "appStoreConnect.warning.privateKeyUnreadable":
+    "App Store Connect private key okunamadi: {message}",
+  "appStoreConnect.warning.bundleIdMissing":
+    "App Store Connect uygulamasini cozecek bundle ID bulunamadi. ASC_APP_ID tanimlayin veya bundle ID'yi yerelde saglayin.",
+  "appStoreConnect.warning.appNotFound":
+    "Hedef uygulama App Store Connect uzerinde bulunamadi.",
+  "appStoreConnect.warning.surfaceUnavailable":
+    "App Store Connect yuzeyi `{surface}` yuklenemedi: {message}",
+  "appStoreConnect.warning.fetchUnavailable":
+    "Bu calisma zamaninda global fetch yok; App Store Connect kontrolleri calisamadi.",
+  "appStoreConnect.warning.setupUnavailableNonInteractive":
+    "Etkilesimli App Store Connect kurulumu sadece yerel terminalde kullanilabilir. `preflight scan` komutunu yerelde bir kez calistirin veya ASC_* environment degiskenlerini ayarlayin.",
+  "appStoreConnect.warning.setupIncomplete":
+    "Etkilesimli App Store Connect kurulumu gerekli alanlardan biri bos oldugu icin tamamlanamadi.",
+  "appStoreConnect.warning.setupCancelled":
+    "Etkilesimli App Store Connect kurulumu iptal edildi.",
+  "appStoreConnect.warning.setupFailed":
+    "Etkilesimli App Store Connect kurulumu basarisiz oldu: {message}",
+  "appStoreConnect.warning.requestFailed":
+    "App Store Connect istegi basarisiz oldu: {message}",
+  "appStoreConnect.prompt.setupIntroOpened":
+    "App Store Connect kimlik bilgileri bulunamadi. App Store Connect API Keys sayfasi tarayicida acildi.\nBir API key olusturun veya indirin, sonra asagidaki bilgileri girin.\nAyarlar {path} konumuna kaydedilecek.\nURL: {url}\n",
+  "appStoreConnect.prompt.setupIntroManual":
+    "App Store Connect kimlik bilgileri bulunamadi. App Store Connect API Keys sayfasini acin, bir API key olusturun veya indirin, sonra asagidaki bilgileri girin.\nAyarlar {path} konumuna kaydedilecek.\nURL: {url}\n",
+  "appStoreConnect.prompt.issuerId": "Issuer ID:",
+  "appStoreConnect.prompt.keyId": "Key ID:",
+  "appStoreConnect.prompt.privateKeyPath": "Indirilen .p8 key dosyasinin yolu:",
+  "appStoreConnect.prompt.appId":
+    "App ID (opsiyonel, bundle ID ile cozulmesi icin bos birakin):",
 
   "missing.demoAccount.label": "Demo hesabi",
   "missing.demoAccount.message":
@@ -824,12 +989,12 @@ const turkishMessages: MessageCatalog = {
 const germanMessages: MessageCatalog = {
   "cli.description": "CI-taugliche Risikoanalyse fuer App-Store-Einreichungen.",
   "cli.option.lang": "Ausgabesprache",
-  "command.scan.description": "Einen lokalen, auto-discovery-first Risiko-Scan ausfuehren.",
-  "command.reviewer-pack.description": "Nur das Reviewer-Pack pruefen und erzeugen.",
+  "command.scan.description":
+    "Einen auto-discovery-first Risiko-Scan mit optionalen App-Store-Connect-Pruefungen ausfuehren.",
   "command.rules.description": "Gebundelte aktive Regeln auflisten.",
   "command.init.description": "Eine optionale Preflight-Override-Vorlage erstellen.",
   "output.scan.title": "PREFLIGHT SCAN-ERGEBNISSE",
-  "output.reviewerPack.title": "REVIEWER-PAKET",
+  "output.reviewerPack.title": "REVIEW READINESS",
   "output.rules.title": "AKTIVE REGELN",
   "output.riskLevel": "Risikostufe",
   "output.riskScore": "Risiko-Score",
@@ -846,13 +1011,12 @@ const germanMessages: MessageCatalog = {
 const frenchMessages: MessageCatalog = {
   "cli.description": "Moteur de risque pour soumission App Store integre au CI.",
   "cli.option.lang": "Langue de sortie",
-  "command.scan.description": "Executer une analyse locale auto-discovery-first du risque.",
-  "command.reviewer-pack.description":
-    "Valider et generer uniquement le pack reviewer.",
+  "command.scan.description":
+    "Executer une analyse auto-discovery-first du risque avec controles App Store Connect optionnels.",
   "command.rules.description": "Lister les regles actives embarquees.",
   "command.init.description": "Creer un modele optionnel d'override Preflight.",
   "output.scan.title": "RESULTATS PREFLIGHT",
-  "output.reviewerPack.title": "PACK REVIEWER",
+  "output.reviewerPack.title": "REVIEW READINESS",
   "output.rules.title": "REGLES ACTIVES",
   "output.riskLevel": "Niveau de risque",
   "output.riskScore": "Score de risque",
@@ -869,13 +1033,12 @@ const frenchMessages: MessageCatalog = {
 const spanishMessages: MessageCatalog = {
   "cli.description": "Motor de riesgo para envios al App Store integrado en CI.",
   "cli.option.lang": "Idioma de salida",
-  "command.scan.description": "Ejecutar un analisis local auto-discovery-first de riesgo.",
-  "command.reviewer-pack.description":
-    "Validar y generar solo el reviewer pack.",
+  "command.scan.description":
+    "Ejecutar un analisis auto-discovery-first de riesgo con comprobaciones opcionales de App Store Connect.",
   "command.rules.description": "Listar las reglas activas incluidas.",
   "command.init.description": "Crear una plantilla opcional de override para Preflight.",
   "output.scan.title": "RESULTADOS DE PREFLIGHT",
-  "output.reviewerPack.title": "REVIEWER PACK",
+  "output.reviewerPack.title": "REVIEW READINESS",
   "output.rules.title": "REGLAS ACTIVAS",
   "output.riskLevel": "Nivel de riesgo",
   "output.riskScore": "Puntuacion de riesgo",
@@ -892,13 +1055,12 @@ const spanishMessages: MessageCatalog = {
 const italianMessages: MessageCatalog = {
   "cli.description": "Motore di rischio per submission App Store integrato nel CI.",
   "cli.option.lang": "Lingua di output",
-  "command.scan.description": "Esegui una scansione locale auto-discovery-first del rischio.",
-  "command.reviewer-pack.description":
-    "Valida e genera solo il reviewer pack.",
+  "command.scan.description":
+    "Esegui una scansione auto-discovery-first del rischio con controlli opzionali di App Store Connect.",
   "command.rules.description": "Elenca le regole attive incluse.",
   "command.init.description": "Crea un modello opzionale di override Preflight.",
   "output.scan.title": "RISULTATI PREFLIGHT",
-  "output.reviewerPack.title": "REVIEWER PACK",
+  "output.reviewerPack.title": "REVIEW READINESS",
   "output.rules.title": "REGOLE ATTIVE",
   "output.riskLevel": "Livello di rischio",
   "output.riskScore": "Punteggio di rischio",
@@ -915,13 +1077,12 @@ const italianMessages: MessageCatalog = {
 const portugueseMessages: MessageCatalog = {
   "cli.description": "Motor de risco para envio ao App Store integrado ao CI.",
   "cli.option.lang": "Idioma de saida",
-  "command.scan.description": "Executar uma analise local auto-discovery-first de risco.",
-  "command.reviewer-pack.description":
-    "Validar e gerar apenas o reviewer pack.",
+  "command.scan.description":
+    "Executar uma analise auto-discovery-first de risco com verificacoes opcionais do App Store Connect.",
   "command.rules.description": "Listar as regras ativas embarcadas.",
   "command.init.description": "Criar um modelo opcional de override do Preflight.",
   "output.scan.title": "RESULTADOS DO PREFLIGHT",
-  "output.reviewerPack.title": "REVIEWER PACK",
+  "output.reviewerPack.title": "REVIEW READINESS",
   "output.rules.title": "REGRAS ATIVAS",
   "output.riskLevel": "Nivel de risco",
   "output.riskScore": "Pontuacao de risco",
@@ -938,13 +1099,12 @@ const portugueseMessages: MessageCatalog = {
 const japaneseMessages: MessageCatalog = {
   "cli.description": "CI tonogo App Store shutsugan risk engine.",
   "cli.option.lang": "Shutsuryoku gengo",
-  "command.scan.description": "Auto-discovery-first no local risk scan o jikkou",
-  "command.reviewer-pack.description":
-    "Reviewer pack no kenshou to seisei nomi",
+  "command.scan.description":
+    "Auto-discovery-first no risk scan to optional App Store Connect checks de jikkou",
   "command.rules.description": "Bundled active rules o ichiran",
   "command.init.description": "Opshon no Preflight override template o sakusei",
   "output.scan.title": "PREFLIGHT SCAN RESULTS",
-  "output.reviewerPack.title": "REVIEWER PACK",
+  "output.reviewerPack.title": "REVIEW READINESS",
   "output.rules.title": "ACTIVE RULES",
   "output.riskLevel": "Risk Level",
   "output.riskScore": "Risk Score",
@@ -961,13 +1121,12 @@ const japaneseMessages: MessageCatalog = {
 const koreanMessages: MessageCatalog = {
   "cli.description": "CI tonghap App Store submit risk engine.",
   "cli.option.lang": "Chulryeok eoneo",
-  "command.scan.description": "Auto-discovery-first local risk scan silhaeng",
-  "command.reviewer-pack.description":
-    "Reviewer pack geomsa mit saengseongman silhaeng",
+  "command.scan.description":
+    "Auto-discovery-first risk scan mit optional App Store Connect checks silhaeng",
   "command.rules.description": "Bundled active rules moglog pyo si",
   "command.init.description": "Seontaekjeok Preflight override template saengseong",
   "output.scan.title": "PREFLIGHT SCAN RESULTS",
-  "output.reviewerPack.title": "REVIEWER PACK",
+  "output.reviewerPack.title": "REVIEW READINESS",
   "output.rules.title": "ACTIVE RULES",
   "output.riskLevel": "Risk Level",
   "output.riskScore": "Risk Score",
@@ -984,13 +1143,12 @@ const koreanMessages: MessageCatalog = {
 const chineseMessages: MessageCatalog = {
   "cli.description": "Ji cheng CI de App Store tijiao fengxian yinqing.",
   "cli.option.lang": "Shuchu yuyan",
-  "command.scan.description": "Yunxing auto-discovery-first de ben di fengxian saomiao",
-  "command.reviewer-pack.description":
-    "Jin yanzheng bing shengcheng reviewer pack",
+  "command.scan.description":
+    "Yunxing auto-discovery-first fengxian saomiao bing zhichi kexuan App Store Connect jiancha",
   "command.rules.description": "Liechu neizhi de huoyue guize",
   "command.init.description": "Chuangjian kexuan de Preflight override muban",
   "output.scan.title": "PREFLIGHT SCAN RESULTS",
-  "output.reviewerPack.title": "REVIEWER PACK",
+  "output.reviewerPack.title": "REVIEW READINESS",
   "output.rules.title": "ACTIVE RULES",
   "output.riskLevel": "Risk Level",
   "output.riskScore": "Risk Score",

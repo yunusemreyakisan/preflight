@@ -14,7 +14,7 @@ function getCommandHelp(locale: string, commandName: string): string {
 }
 
 describe("cli help", () => {
-  it("renders the v0.3 auto-discovery-first copy in English", () => {
+  it("renders the current scan help in English", () => {
     const program = buildProgram(["node", "preflight", "--lang", "en"]);
     const globalHelp = program.helpInformation();
     const scanHelp = getCommandHelp("en", "scan");
@@ -22,10 +22,12 @@ describe("cli help", () => {
 
     expect(globalHelp).toContain("CI-grade App Store submission risk engine.");
     expect(globalHelp).toContain("--plain");
-    expect(scanHelp).toContain("Run an auto-discovery-first local submission risk scan.");
+    expect(scanHelp).toContain("Run an auto-discovery-first submission risk scan");
+    expect(scanHelp).toContain("optional App Store Connect");
     expect(scanHelp).toContain("Path to an optional preflight override file");
     expect(scanHelp).toContain("--baseline <path>");
     expect(scanHelp).toContain("--annotations <target>");
+    expect(scanHelp).toContain("--skip-app-store-connect");
     expect(initHelp).toContain("Create an optional preflight override template.");
   });
 
@@ -35,5 +37,11 @@ describe("cli help", () => {
 
     expect(scanHelp).toContain("auto-discovery-first");
     expect(initHelp).toContain("Override");
+  });
+
+  it("does not register the removed reviewer-pack command", () => {
+    const program = buildProgram(["node", "preflight", "--lang", "en"]);
+
+    expect(program.commands.some((entry) => entry.name() === "reviewer-pack")).toBe(false);
   });
 });

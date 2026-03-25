@@ -1,8 +1,8 @@
 export { buildProgram, main } from "./cli/index";
 export { runInit, type RunInitResult } from "./cli/commands/init";
-export { runReviewerPack, type RunReviewerPackResult } from "./cli/commands/reviewer-pack";
 export { runRules, type RunRulesResult } from "./cli/commands/rules";
 export { runScan, type RunScanResult } from "./cli/commands/scan";
+export { fetchAppStoreConnectData } from "./app-store-connect/read-app-store-connect";
 export { SUPPORTED_LOCALES } from "./types";
 export {
   preflightConfigSchema,
@@ -19,25 +19,34 @@ export {
   type LoadedConfigResult
 } from "./config/load-config";
 export { createTranslator, resolveLocale, resolveLocaleFromArgv } from "./i18n";
-export { formatJsonReport, formatReviewerPackJson, formatRulesJson } from "./output/format-json";
+export { formatJsonReport, formatReviewReadinessJson, formatRulesJson } from "./output/format-json";
 export {
-  formatHumanReviewerPack,
+  formatHumanReviewReadiness,
   formatHumanScanReport,
   formatRulesTable
 } from "./output/format-human";
-export { generateReviewerPackTemplate } from "./reviewer-pack/generator";
-export { evaluateReviewerPack } from "./reviewer-pack/evaluate-reviewer-pack";
+export { generateSuggestedReviewNotes } from "./review-readiness/generator";
+export { evaluateReviewReadiness } from "./review-readiness/evaluate-review-readiness";
 export { assessRisk, getExitCode } from "./risk/assess-risk";
 export { RULE_REGISTRY, RULESET_METADATA, evaluateRuleRegistry } from "./rules/registry";
 export { discoverProject } from "./discovery/discover-project";
 export {
-  buildReviewerPackReport,
-  renderReviewerPackResult,
+  buildReviewReadinessReport,
+  renderReviewReadinessResult,
   renderScanResult,
   scanProject
 } from "./scanner/scan-project";
 export { buildScanInput, collectMissingInputs } from "./scanner/build-scan-input";
 export type {
+  AppStoreConnectAuthSource,
+  AppStoreConnectComparisonStatus,
+  AppStoreConnectInteractiveRuntime,
+  AppStoreConnectIapCheck,
+  AppStoreConnectReport,
+  AppStoreConnectScreenshotCheck,
+  AppStoreConnectStatus,
+  AppStoreConnectSummary,
+  AppStoreConnectValueCheck,
   AnnotationTarget,
   BaselineComparison,
   BaselineComparisonSummary,
@@ -53,9 +62,9 @@ export type {
   PassedCheck,
   ProjectType,
   ResolvedField,
-  ReviewerPackCommandOptions,
-  ReviewerPackItem,
-  ReviewerPackReport,
+  ReviewReadinessCommandOptions,
+  ReviewReadinessItem,
+  ReviewReadinessReport,
   RiskLevel,
   RiskReport,
   RuleCategory,

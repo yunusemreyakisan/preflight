@@ -3,11 +3,13 @@ import chalk from "chalk";
 
 import { RULESET_METADATA } from "../rules/registry";
 import type {
+  AppStoreConnectComparisonStatus,
+  AppStoreConnectReport,
   BaselineComparison,
   HumanOutputMode,
   Issue,
   MissingInput,
-  ReviewerPackReport,
+  ReviewReadinessReport,
   RiskLevel,
   RuleCategory,
   RuleDefinition,
@@ -199,7 +201,25 @@ function buildSurfaceRows(
 
   rows.push({
     label: translator.t("output.surface.reviewerPack"),
-    status: result.reviewer_pack.status === "complete" ? "ok" : "fail"
+    status: result.review_readiness.status === "complete" ? "ok" : "fail"
+  });
+
+  rows.push({
+    label: translator.t("output.surface.appStoreConnect"),
+    status:
+      result.app_store_connect.status !== "connected"
+        ? "warn"
+        : result.app_store_connect.summary.value_mismatches > 0 ||
+            result.app_store_connect.summary.value_remote_only > 0 ||
+            result.app_store_connect.summary.value_local_only > 0 ||
+            result.app_store_connect.summary.screenshot_mismatches > 0 ||
+            result.app_store_connect.summary.screenshot_remote_only > 0 ||
+            result.app_store_connect.summary.screenshot_local_only > 0 ||
+            result.app_store_connect.summary.iap_mismatches > 0 ||
+            result.app_store_connect.summary.iap_remote_only > 0 ||
+            result.app_store_connect.summary.iap_local_only > 0
+          ? "warn"
+          : "ok"
   });
 
   rows.push({
@@ -230,7 +250,13 @@ function buildSurfaceRows(
 }
 
 function formatSourceLabel(
-  source: "config" | "discovered" | "default" | "missing" | undefined,
+  source:
+    | "config"
+    | "discovered"
+    | "app-store-connect"
+    | "default"
+    | "missing"
+    | undefined,
   translator: Translator,
   mode: HumanOutputMode
 ): string {
@@ -334,29 +360,54 @@ function formatMissingInputBlock(
   ];
 }
 
-function formatReviewerPackTemplate(
-  reviewerPack: ReviewerPackReport,
+function getComparisonTone(
+  status: AppStoreConnectComparisonStatus
+): StatusTone {
+  return status === "match" ? "ok" : "warn";
+}
+
+function formatComparisonStatus(
+  status: AppStoreConnectComparisonStatus,
+  translator: Translator
+): string {
+  if (status === "match") {
+    return translator.t("output.appStoreConnect.status.match");
+  }
+
+  if (status === "mismatch") {
+    return translator.t("output.appStoreConnect.status.mismatch");
+  }
+
+  if (status === "remote-only") {
+    return translator.t("output.appStoreConnect.status.remoteOnly");
+  }
+
+  return translator.t("output.appStoreConnect.status.localOnly");
+}
+
+function formatReviewReadinessTemplate(
+  reviewReadiness: ReviewReadinessReport,
   translator: Translator,
   mode: HumanOutputMode
 ): string[] {
-  const lines = buildReviewerPackRows(reviewerPack, translator, mode);
+  const lines = buildReviewReadinessRows(reviewReadiness, translator, mode);
 
-  if (reviewerPack.missing.length > 0) {
+  if (reviewReadiness.missing.length > 0) {
     lines.push("", `  ${colorize(mode, "strong", translator.t("output.reviewerPack.missing"))}`);
-    reviewerPack.missing.forEach((item) => lines.push(`  - ${item}`));
+    reviewReadiness.missing.forEach((item) => lines.push(`  - ${item}`));
   }
 
-  if (reviewerPack.notes.length > 0) {
+  if (reviewReadiness.notes.length > 0) {
     lines.push("", `  ${colorize(mode, "strong", translator.t("output.reviewerPack.notes"))}`);
-    reviewerPack.notes.forEach((note) => lines.push(`  - ${note}`));
+    reviewReadiness.notes.forEach((note) => lines.push(`  - ${note}`));
   }
 
-  if (reviewerPack.generatedReviewNotesTemplate) {
+  if (reviewReadiness.suggestedReviewNotes) {
     lines.push(
       "",
       `  ${colorize(mode, "strong", translator.t("output.reviewerPack.generatedTemplate"))}`,
       `  ${createDivider(mode)}`,
-      reviewerPack.generatedReviewNotesTemplate,
+      reviewReadiness.suggestedReviewNotes,
       `  ${createDivider(mode)}`,
       `  ${colorize(mode, "muted", translator.t("output.reviewerPack.copyInstruction"))}`
     );
@@ -451,20 +502,20 @@ function formatBaselineSection(
   return lines;
 }
 
-function buildReviewerPackRows(
-  reviewerPack: ReviewerPackReport,
+function buildReviewReadinessRows(
+  reviewReadiness: ReviewReadinessReport,
   translator: Translator,
   mode: HumanOutputMode
 ): string[] {
   const lines = [
     renderStatusRow(
       translator.t("output.reviewerPack.status"),
-      reviewerPack.status === "complete" ? "ok" : "fail",
+      reviewReadiness.status === "complete" ? "ok" : "fail",
       mode
     )
   ];
 
-  reviewerPack.items.forEach((item) => {
+  reviewReadiness.items.forEach((item) => {
     const sourceLabel = formatSourceLabel(item.source, translator, mode);
 
     lines.push(
@@ -475,6 +526,177 @@ function buildReviewerPackRows(
       )
     );
   });
+
+  return lines;
+}
+
+function formatAppStoreConnectSection(
+  report: AppStoreConnectReport,
+  translator: Translator,
+  mode: HumanOutputMode
+): string[] {
+  const lines = [
+    renderStatusRow(
+      translator.t("output.appStoreConnect.statusLabel"),
+      report.status === "connected" ? "ok" : "warn",
+      mode
+    ),
+    renderLabelValue(
+      translator.t("output.appStoreConnect.connection"),
+      translator.t(`output.appStoreConnect.connection.${report.status}`),
+      mode
+    )
+  ];
+
+  if (report.bundle_id) {
+    lines.push(
+      renderLabelValue(
+        translator.t("output.appStoreConnect.bundleId"),
+        report.bundle_id,
+        mode
+      )
+    );
+  }
+
+  if (report.app_id) {
+    lines.push(
+      renderLabelValue(translator.t("output.appStoreConnect.appId"), report.app_id, mode)
+    );
+  }
+
+  if (report.version_string || report.version_state) {
+    const details = [
+      report.version_string,
+      report.version_state ? `[${report.version_state}]` : undefined,
+      report.version_source
+        ? translator.t(`output.appStoreConnect.versionSource.${report.version_source}`)
+        : undefined
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    lines.push(
+      renderLabelValue(translator.t("output.appStoreConnect.version"), details, mode)
+    );
+  }
+
+  if (report.available_territories.length > 0) {
+    lines.push(
+      renderLabelValue(
+        translator.t("output.appStoreConnect.territories"),
+        report.available_territories.join(", "),
+        mode
+      )
+    );
+  }
+
+  if (report.has_app_price_schedule !== undefined) {
+    lines.push(
+      renderLabelValue(
+        translator.t("output.appStoreConnect.appPriceSchedule"),
+        report.has_app_price_schedule
+          ? translator.t("output.yes")
+          : translator.t("output.no"),
+        mode
+      )
+    );
+  }
+
+  if (report.review_attachment_count !== undefined) {
+    lines.push(
+      renderLabelValue(
+        translator.t("output.appStoreConnect.reviewAttachments"),
+        String(report.review_attachment_count),
+        mode
+      )
+    );
+  }
+
+  lines.push(
+    renderLabelValue(
+      translator.t("output.appStoreConnect.summary"),
+      [
+        `${report.summary.value_mismatches + report.summary.value_remote_only + report.summary.value_local_only} ${translator.t("output.appStoreConnect.summary.values")}`,
+        `${report.summary.screenshot_mismatches + report.summary.screenshot_remote_only + report.summary.screenshot_local_only} ${translator.t("output.appStoreConnect.summary.screenshots")}`,
+        `${report.summary.iap_mismatches + report.summary.iap_remote_only + report.summary.iap_local_only} ${translator.t("output.appStoreConnect.summary.iaps")}`
+      ].join(" / "),
+      mode
+    )
+  );
+
+  if (report.value_checks.length > 0) {
+    lines.push("", `  ${colorize(mode, "strong", translator.t("output.appStoreConnect.valueChecks"))}`);
+    report.value_checks.forEach((check) => {
+      lines.push(
+        `  ${formatStatusLabel(mode, getComparisonTone(check.status))} ${check.label}: ${formatComparisonStatus(check.status, translator)}`
+      );
+
+      if (check.local_value) {
+        lines.push(`    ${colorize(mode, "muted", "local")} ${check.local_value}`);
+      }
+
+      if (check.remote_value) {
+        lines.push(`    ${colorize(mode, "muted", "remote")} ${check.remote_value}`);
+      }
+    });
+  }
+
+  if (report.screenshot_checks.length > 0) {
+    lines.push("", `  ${colorize(mode, "strong", translator.t("output.appStoreConnect.screenshotChecks"))}`);
+    report.screenshot_checks.forEach((check) => {
+      lines.push(
+        `  ${formatStatusLabel(mode, getComparisonTone(check.status))} ${check.locale} / ${check.device_type}: ${check.local_count} local vs ${check.remote_count} remote`
+      );
+    });
+  }
+
+  if (report.iap_checks.length > 0) {
+    lines.push("", `  ${colorize(mode, "strong", translator.t("output.appStoreConnect.iapChecks"))}`);
+    report.iap_checks.forEach((check) => {
+      const schedule = check.has_price_schedule
+        ? translator.t("output.yes")
+        : check.has_price_schedule === false
+          ? translator.t("output.no")
+          : "-";
+
+      lines.push(
+        `  ${formatStatusLabel(mode, getComparisonTone(check.status))} ${check.product_id}: ${formatComparisonStatus(check.status, translator)}`
+      );
+
+      if (check.local_display_name || check.remote_display_name || check.remote_state) {
+        lines.push(
+          `    ${colorize(mode, "muted", "local")} ${check.local_display_name ?? "-"}`
+        );
+        lines.push(
+          `    ${colorize(mode, "muted", "remote")} ${check.remote_display_name ?? "-"} ${check.remote_state ? `[${check.remote_state}]` : ""}`.trim()
+        );
+        lines.push(
+          `    ${colorize(mode, "muted", translator.t("output.appStoreConnect.priceSchedule"))} ${schedule}`
+        );
+      }
+    });
+  }
+
+  if (report.warnings.length > 0) {
+    lines.push("", `  ${colorize(mode, "strong", translator.t("output.appStoreConnect.warnings"))}`);
+    report.warnings.forEach((warning) => lines.push(`  - ${warning}`));
+  }
+
+  if (report.notes.length > 0) {
+    lines.push("", `  ${colorize(mode, "strong", translator.t("output.appStoreConnect.notes"))}`);
+    report.notes.forEach((note) => lines.push(`  - ${note}`));
+  }
+
+  if (report.missing_env.length > 0) {
+    lines.push(
+      "",
+      renderLabelValue(
+        translator.t("output.appStoreConnect.missingEnv"),
+        report.missing_env.join(", "),
+        mode
+      )
+    );
+  }
 
   return lines;
 }
@@ -523,11 +745,33 @@ function formatCiScanReport(
 
   lines.push(
     `${translator.t("output.reviewerPack.status")}: ${
-      result.reviewer_pack.status === "complete"
+      result.review_readiness.status === "complete"
         ? translator.t("output.complete")
         : translator.t("output.incomplete")
     }`
   );
+
+  lines.push(
+    `${translator.t("output.appStoreConnect.statusLabel")}: ${translator.t(
+      `output.appStoreConnect.connection.${result.app_store_connect.status}`
+    )}`
+  );
+
+  if (result.app_store_connect.warnings.length > 0) {
+    lines.push(`${translator.t("output.appStoreConnect.warnings")}:`);
+    result.app_store_connect.warnings.forEach((warning) => lines.push(`- ${warning}`));
+  }
+
+  if (result.app_store_connect.notes.length > 0) {
+    lines.push(`${translator.t("output.appStoreConnect.notes")}:`);
+    result.app_store_connect.notes.forEach((note) => lines.push(`- ${note}`));
+  }
+
+  if (result.app_store_connect.missing_env.length > 0) {
+    lines.push(
+      `${translator.t("output.appStoreConnect.missingEnv")}: ${result.app_store_connect.missing_env.join(", ")}`
+    );
+  }
 
   if (result.baseline) {
     lines.push(
@@ -697,7 +941,10 @@ function formatStandardScanReport(
   lines.push(
     "",
     `  ${colorize(mode, "strong", translator.t("output.reviewerPack.title"))}`,
-    ...formatReviewerPackTemplate(result.reviewer_pack, translator, mode),
+    ...formatReviewReadinessTemplate(result.review_readiness, translator, mode),
+    "",
+    `  ${colorize(mode, "strong", translator.t("output.appStoreConnect.title"))}`,
+    ...formatAppStoreConnectSection(result.app_store_connect, translator, mode),
     "",
     `  ${colorize(mode, "strong", translator.t("output.verdict"))}`,
     `  ${colorize(mode, result.risk_level === "LOW" ? "ok" : result.risk_level === "MEDIUM" ? "warn" : "fail", translator.t(getVerdictKey(result.risk_level)))}`
@@ -723,8 +970,8 @@ export function formatHumanScanReport(
   return formatStandardScanReport(result, translator, mode);
 }
 
-export function formatHumanReviewerPack(
-  reviewerPack: ReviewerPackReport,
+export function formatHumanReviewReadiness(
+  reviewReadiness: ReviewReadinessReport,
   translator: Translator,
   options: {
     plain?: boolean;
@@ -737,13 +984,13 @@ export function formatHumanReviewerPack(
     ...createPanel("PREFLIGHT", translator.t("output.brand.tagline"), mode),
     "",
     `  ${colorize(mode, "strong", translator.t("output.reviewerPack.title"))}`,
-    ...formatReviewerPackTemplate(reviewerPack, translator, mode),
+    ...formatReviewReadinessTemplate(reviewReadiness, translator, mode),
     "",
     `  ${colorize(mode, "strong", translator.t("output.verdict"))}`,
     `  ${colorize(
       mode,
-      reviewerPack.status === "complete" ? "ok" : "fail",
-      reviewerPack.status === "complete"
+      reviewReadiness.status === "complete" ? "ok" : "fail",
+      reviewReadiness.status === "complete"
         ? translator.t("output.reviewerPack.complete")
         : translator.t("output.reviewerPack.incomplete")
     )}`

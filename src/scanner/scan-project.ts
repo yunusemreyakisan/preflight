@@ -1,3 +1,4 @@
+import { fetchAppStoreConnectData } from "../app-store-connect/read-app-store-connect";
 import { loadConfigFromFile } from "../config/load-config";
 import { collectFieldSources, mergeKnownValues } from "../config/object-helpers";
 import {
@@ -7,21 +8,23 @@ import {
 } from "../config/schema";
 import { discoverProject } from "../discovery/discover-project";
 import { createTranslator, resolveLocale } from "../i18n";
-import { formatJsonReport, formatReviewerPackJson } from "../output/format-json";
+import { formatJsonReport, formatReviewReadinessJson } from "../output/format-json";
 import {
-  formatHumanReviewerPack,
+  formatHumanReviewReadiness,
   formatHumanScanReport
 } from "../output/format-human";
-import { evaluateReviewerPack } from "../reviewer-pack/evaluate-reviewer-pack";
+import { evaluateReviewReadiness } from "../review-readiness/evaluate-review-readiness";
 import { assessRisk, getExitCode } from "../risk/assess-risk";
 import { evaluateRuleRegistry, RULE_REGISTRY } from "../rules/registry";
 import { buildScanInput, collectMissingInputs } from "./build-scan-input";
 import { compareAgainstBaseline } from "./compare-baseline";
 import type {
+  AppStoreConnectReport,
   DiscoveryReport,
+  FieldSource,
   Issue,
-  ReviewerPackCommandOptions,
-  ReviewerPackReport,
+  ReviewReadinessCommandOptions,
+  ReviewReadinessReport,
   ScanCommandOptions,
   ScanResult,
   Translator
@@ -29,33 +32,94 @@ import type {
 
 type UnknownRecord = Record<string, unknown>;
 
-interface PreparedScanContextSuccess {
+interface PreparedLocalScanContextSuccess {
   ok: true;
-  translator: Translator;
+  configDir: string;
   configPath: string;
   configWarnings: string[];
+  discoveredConfig: PreflightConfigOverride;
   discovery: DiscoveryReport;
-  input: ReturnType<typeof buildScanInput>;
+  discoveryFieldSources: Record<string, FieldSource>;
+  localInput: ReturnType<typeof buildScanInput>;
+  overrideConfig: PreflightConfigOverride;
+  overrideFieldSources: Record<string, FieldSource>;
+  translator: Translator;
 }
 
-interface PreparedScanContextFailure {
+interface PreparedLocalScanContextFailure {
   ok: false;
-  translator: Translator;
   configPath: string;
   configWarnings: string[];
   discovery: DiscoveryReport;
   blockingIssues: Issue[];
+  translator: Translator;
+}
+
+type PreparedLocalScanContext =
+  | PreparedLocalScanContextSuccess
+  | PreparedLocalScanContextFailure;
+
+interface PreparedScanContextSuccess {
+  ok: true;
+  appStoreConnect: AppStoreConnectReport;
+  configPath: string;
+  configWarnings: string[];
+  discovery: DiscoveryReport;
+  input: ReturnType<typeof buildScanInput>;
+  translator: Translator;
+}
+
+interface PreparedScanContextFailure {
+  ok: false;
+  appStoreConnect: AppStoreConnectReport;
+  blockingIssues: Issue[];
+  configPath: string;
+  configWarnings: string[];
+  discovery: DiscoveryReport;
+  translator: Translator;
 }
 
 type PreparedScanContext = PreparedScanContextSuccess | PreparedScanContextFailure;
 
-function buildEmptyReviewerPack(): ReviewerPackReport {
+function buildEmptyReviewReadiness(): ReviewReadinessReport {
   return {
     status: "incomplete",
     items: [],
     missing: ["Valid configuration"],
-    notes: ["Fix the configuration before relying on reviewer-pack output."],
-    generatedReviewNotesTemplate: undefined
+    notes: ["Fix the configuration before relying on review readiness output."],
+    suggestedReviewNotes: undefined
+  };
+}
+
+function buildAppStoreConnectReport(
+  status: AppStoreConnectReport["status"],
+  warnings: string[] = [],
+  notes: string[] = [],
+  missingEnv: string[] = []
+): AppStoreConnectReport {
+  return {
+    status,
+    missing_env: missingEnv,
+    value_checks: [],
+    screenshot_checks: [],
+    iap_checks: [],
+    available_territories: [],
+    warnings,
+    notes,
+    summary: {
+      value_matches: 0,
+      value_mismatches: 0,
+      value_remote_only: 0,
+      value_local_only: 0,
+      screenshot_matches: 0,
+      screenshot_mismatches: 0,
+      screenshot_remote_only: 0,
+      screenshot_local_only: 0,
+      iap_matches: 0,
+      iap_mismatches: 0,
+      iap_remote_only: 0,
+      iap_local_only: 0
+    }
   };
 }
 
@@ -69,24 +133,45 @@ function getCoverageNote(translator: Translator): string {
   });
 }
 
-function mergeResolvedConfig(
-  discoveredConfig: PreflightConfigOverride,
-  overrideConfig: PreflightConfigOverride
-) {
+function mergeResolvedConfig(...sources: PreflightConfigOverride[]) {
   const mergedDefault = mergeKnownValues(
     {},
     defaultPreflightConfig as unknown as UnknownRecord
   );
-  const mergedDiscovered = mergeKnownValues(
-    mergedDefault,
-    discoveredConfig as UnknownRecord
-  );
-  const mergedOverride = mergeKnownValues(
-    mergedDiscovered,
-    overrideConfig as UnknownRecord
-  );
 
-  return preflightConfigSchema.parse(mergedOverride);
+  sources.forEach((source) => {
+    mergeKnownValues(mergedDefault, source as UnknownRecord);
+  });
+
+  return preflightConfigSchema.parse(mergedDefault);
+}
+
+function removeEmptyStringOverrides(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => removeEmptyStringOverrides(entry))
+      .filter((entry) => entry !== undefined);
+  }
+
+  if (value !== null && typeof value === "object") {
+    const next: UnknownRecord = {};
+
+    Object.entries(value as UnknownRecord).forEach(([key, entry]) => {
+      const normalized = removeEmptyStringOverrides(entry);
+
+      if (normalized !== undefined) {
+        next[key] = normalized;
+      }
+    });
+
+    return Object.keys(next).length > 0 ? next : undefined;
+  }
+
+  if (typeof value === "string") {
+    return value.trim() ? value : undefined;
+  }
+
+  return value;
 }
 
 function buildFailureResult(
@@ -100,7 +185,8 @@ function buildFailureResult(
     blocking_issues: preparation.blockingIssues,
     warnings: [],
     passed_checks: [],
-    reviewer_pack: buildEmptyReviewerPack(),
+    review_readiness: buildEmptyReviewReadiness(),
+    app_store_connect: preparation.appStoreConnect,
     discovery: preparation.discovery,
     evidence: preparation.discovery.evidence,
     missing_inputs: [],
@@ -132,9 +218,9 @@ function withBaselineComparison(
   };
 }
 
-function prepareScanContext(
+function prepareLocalScanContext(
   options: Pick<ScanCommandOptions, "cwd" | "configPath" | "lang">
-): PreparedScanContext {
+): PreparedLocalScanContext {
   const translator = createTranslatorFromOptions(options.lang);
   const loadedConfig = loadConfigFromFile({
     cwd: options.cwd,
@@ -183,36 +269,111 @@ function prepareScanContext(
         ]
       }
     : discovery.report;
-  const config = mergeResolvedConfig(
-    discovery.ok ? discovery.config : {},
-    loadedConfig.config
-  );
-  const fieldSources = {
+  const discoveredConfig = discovery.ok ? discovery.config : {};
+  const discoveryFieldSources = discovery.ok ? discovery.fieldSources : {};
+  const localConfig = mergeResolvedConfig(discoveredConfig, loadedConfig.config);
+  const localFieldSources = {
     ...collectFieldSources(defaultPreflightConfig, "default"),
-    ...(discovery.ok ? discovery.fieldSources : {}),
+    ...discoveryFieldSources,
     ...loadedConfig.fieldSources
   };
-  const input = buildScanInput({
-    config,
+  const localInput = buildScanInput({
+    config: localConfig,
     configDir: loadedConfig.configDir,
     configPath: loadedConfig.configPath,
     projectRoot: discoveryReport.project_root,
     discovery: discoveryReport,
-    fieldSources
+    fieldSources: localFieldSources
   });
 
   return {
     ok: true,
     translator,
+    configDir: loadedConfig.configDir,
     configPath: loadedConfig.configPath,
     configWarnings,
+    discoveredConfig,
     discovery: discoveryReport,
+    discoveryFieldSources,
+    overrideConfig: loadedConfig.config,
+    overrideFieldSources: loadedConfig.fieldSources,
+    localInput
+  };
+}
+
+async function prepareScanContext(
+  options: Pick<
+    ScanCommandOptions,
+    | "allowInteractiveAppStoreConnectSetup"
+    | "appStoreConnectRuntime"
+    | "configPath"
+    | "cwd"
+    | "env"
+    | "fetchImpl"
+    | "lang"
+    | "skipAppStoreConnect"
+  >
+): Promise<PreparedScanContext> {
+  const localPreparation = prepareLocalScanContext(options);
+
+  if (!localPreparation.ok) {
+    return {
+      ...localPreparation,
+      appStoreConnect: buildAppStoreConnectReport(
+        "skipped",
+        [],
+        [localPreparation.translator.t("appStoreConnect.note.localPreparationFailed")]
+      )
+    };
+  }
+
+  const appStoreConnectSync = await fetchAppStoreConnectData({
+    allowInteractiveSetup: options.allowInteractiveAppStoreConnectSetup,
+    baseConfig: localPreparation.localInput.config,
+    env: options.env,
+    fetchImpl: options.fetchImpl,
+    runtime: options.appStoreConnectRuntime,
+    screenshotAssets: localPreparation.localInput.screenshotAssets,
+    skip: options.skipAppStoreConnect,
+    translator: localPreparation.translator
+  });
+  const remoteCompatibleOverride =
+    (removeEmptyStringOverrides(localPreparation.overrideConfig) as
+      | PreflightConfigOverride
+      | undefined) ?? {};
+  const config = mergeResolvedConfig(
+    localPreparation.discoveredConfig,
+    appStoreConnectSync.config,
+    remoteCompatibleOverride
+  );
+  const fieldSources = {
+    ...collectFieldSources(defaultPreflightConfig, "default"),
+    ...localPreparation.discoveryFieldSources,
+    ...appStoreConnectSync.fieldSources,
+    ...collectFieldSources(remoteCompatibleOverride, "config")
+  };
+  const input = buildScanInput({
+    config,
+    configDir: localPreparation.configDir,
+    configPath: localPreparation.configPath,
+    projectRoot: localPreparation.discovery.project_root,
+    discovery: localPreparation.discovery,
+    fieldSources
+  });
+
+  return {
+    ok: true,
+    translator: localPreparation.translator,
+    configPath: localPreparation.configPath,
+    configWarnings: localPreparation.configWarnings,
+    discovery: localPreparation.discovery,
+    appStoreConnect: appStoreConnectSync.report,
     input
   };
 }
 
-export function scanProject(options: ScanCommandOptions = {}): ScanResult {
-  const preparation = prepareScanContext(options);
+export async function scanProject(options: ScanCommandOptions = {}): Promise<ScanResult> {
+  const preparation = await prepareScanContext(options);
 
   if (!preparation.ok) {
     return withBaselineComparison(
@@ -223,13 +384,13 @@ export function scanProject(options: ScanCommandOptions = {}): ScanResult {
   }
 
   const ruleResults = evaluateRuleRegistry(preparation.input, preparation.translator);
-  const reviewerPack = evaluateReviewerPack(preparation.input, preparation.translator);
+  const reviewReadiness = evaluateReviewReadiness(preparation.input, preparation.translator);
   const missingInputs = collectMissingInputs(preparation.input, preparation.translator);
   const risk = assessRisk({
     blockingIssues: ruleResults.blockingIssues,
     warnings: ruleResults.warnings,
     passedChecks: ruleResults.passedChecks,
-    reviewerPack,
+    reviewReadiness,
     missingInputs
   });
 
@@ -237,7 +398,8 @@ export function scanProject(options: ScanCommandOptions = {}): ScanResult {
     {
       ...risk,
       primary_reason: risk.primary_reason ?? missingInputs[0]?.message,
-      reviewer_pack: reviewerPack,
+      review_readiness: reviewReadiness,
+      app_store_connect: preparation.appStoreConnect,
       discovery: preparation.discovery,
       evidence: preparation.discovery.evidence,
       missing_inputs: missingInputs,
@@ -269,46 +431,52 @@ export function renderScanResult(
   });
 }
 
-export function buildReviewerPackReport(
-  options: ReviewerPackCommandOptions = {}
-): {
-  reviewerPack: ReviewerPackReport;
+export async function buildReviewReadinessReport(
+  options: ReviewReadinessCommandOptions = {}
+): Promise<{
+  reviewReadiness: ReviewReadinessReport;
   locale: ReturnType<typeof createTranslatorFromOptions>["locale"];
   exitCode: number;
   configPath: string;
-} {
-  const preparation = prepareScanContext(options);
+  appStoreConnect: AppStoreConnectReport;
+}> {
+  const preparation = await prepareScanContext(options);
 
   if (!preparation.ok) {
     return {
-      reviewerPack: buildEmptyReviewerPack(),
+      reviewReadiness: buildEmptyReviewReadiness(),
       locale: preparation.translator.locale,
       exitCode: 2,
-      configPath: preparation.configPath
+      configPath: preparation.configPath,
+      appStoreConnect: preparation.appStoreConnect
     };
   }
 
-  const reviewerPack = evaluateReviewerPack(preparation.input, preparation.translator);
+  const reviewReadiness = evaluateReviewReadiness(
+    preparation.input,
+    preparation.translator
+  );
 
   return {
-    reviewerPack,
+    reviewReadiness,
     locale: preparation.translator.locale,
-    exitCode: reviewerPack.status === "complete" ? 0 : 1,
-    configPath: preparation.configPath
+    exitCode: reviewReadiness.status === "complete" ? 0 : 1,
+    configPath: preparation.configPath,
+    appStoreConnect: preparation.appStoreConnect
   };
 }
 
-export function renderReviewerPackResult(
-  reviewerPack: ReviewerPackReport,
-  options: Pick<ReviewerPackCommandOptions, "json" | "lang" | "plain"> = {}
+export function renderReviewReadinessResult(
+  reviewReadiness: ReviewReadinessReport,
+  options: Pick<ReviewReadinessCommandOptions, "json" | "lang" | "plain"> = {}
 ): string {
   const translator = createTranslatorFromOptions(options.lang);
 
   if (options.json) {
-    return formatReviewerPackJson(reviewerPack);
+    return formatReviewReadinessJson(reviewReadiness);
   }
 
-  return formatHumanReviewerPack(reviewerPack, translator, {
+  return formatHumanReviewReadiness(reviewReadiness, translator, {
     plain: options.plain
   });
 }

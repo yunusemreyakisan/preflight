@@ -1,7 +1,7 @@
 import type {
   Issue,
   MissingInput,
-  ReviewerPackReport,
+  ReviewReadinessReport,
   RiskLevel,
   RiskReport,
   Severity
@@ -17,7 +17,7 @@ export function assessRisk(options: {
   blockingIssues: Issue[];
   warnings: Issue[];
   passedChecks: RiskReport["passed_checks"];
-  reviewerPack: ReviewerPackReport;
+  reviewReadiness: ReviewReadinessReport;
   missingInputs?: MissingInput[];
 }): RiskReport {
   const missingInputs = options.missingInputs ?? [];
@@ -37,7 +37,7 @@ export function assessRisk(options: {
     options.blockingIssues.reduce((total, issue) => total + severityWeights[issue.severity], 0) +
     options.warnings.reduce((total, issue) => total + severityWeights[issue.severity], 0) +
     missingInputs.reduce((total, input) => total + severityWeights[input.severity], 0) +
-    (options.reviewerPack.status === "incomplete" ? 10 : 0);
+    (options.reviewReadiness.status === "incomplete" ? 10 : 0);
 
   let riskLevel: RiskLevel = "LOW";
 
@@ -45,7 +45,7 @@ export function assessRisk(options: {
     riskLevel = "HIGH";
   } else if (
     warningSeverityCounts.medium > 0 ||
-    options.reviewerPack.status === "incomplete" ||
+    options.reviewReadiness.status === "incomplete" ||
     missingInputs.length > 0
   ) {
     riskLevel = "MEDIUM";

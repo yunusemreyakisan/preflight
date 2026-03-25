@@ -25,7 +25,7 @@ preflight scan
 
 - Preflight is distributed via npm only.
 - \`scan\` is auto-discovery-first and uses \`preflight.config.json\` only for sparse overrides.
-- Output includes risk, evidence, missing inputs, reviewer-pack guidance, baseline diffs, and GitHub Actions annotations for local workflows and CI.
+- Output includes risk, evidence, missing inputs, review-readiness guidance, App Store Connect drift checks, baseline diffs, and GitHub Actions annotations for local workflows and CI.
 
 ## CI Highlights
 

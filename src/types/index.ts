@@ -11,7 +11,7 @@ export type RuleCategory =
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
 export type HumanOutputMode = "plain" | "branded";
-export type FieldSource = "default" | "discovered" | "config";
+export type FieldSource = "default" | "discovered" | "app-store-connect" | "config";
 export type AnnotationTarget = "github";
 export type ProjectType =
   | "native-ios"
@@ -145,7 +145,7 @@ export interface RuleVersionMetadata {
   remoteUpdatesAvailable: boolean;
 }
 
-export interface ReviewerPackItem {
+export interface ReviewReadinessItem {
   key: string;
   label: string;
   status: "pass" | "fail";
@@ -153,12 +153,90 @@ export interface ReviewerPackItem {
   source?: FieldSource | "missing";
 }
 
-export interface ReviewerPackReport {
+export interface ReviewReadinessReport {
   status: "complete" | "incomplete";
-  items: ReviewerPackItem[];
+  items: ReviewReadinessItem[];
   missing: string[];
   notes: string[];
-  generatedReviewNotesTemplate?: string;
+  suggestedReviewNotes?: string;
+}
+
+export type AppStoreConnectStatus = "connected" | "skipped" | "unavailable";
+export type AppStoreConnectAuthSource = "env" | "local-config";
+export type AppStoreConnectComparisonStatus =
+  | "match"
+  | "mismatch"
+  | "remote-only"
+  | "local-only";
+
+export interface AppStoreConnectInteractiveRuntime {
+  configPath?: string;
+  cwd?: string;
+  isInteractive?: boolean;
+  prompt?: (question: string) => Promise<string>;
+  openUrl?: (url: string) => Promise<boolean>;
+}
+
+export interface AppStoreConnectValueCheck {
+  key: string;
+  label: string;
+  status: AppStoreConnectComparisonStatus;
+  local_value?: string;
+  remote_value?: string;
+}
+
+export interface AppStoreConnectScreenshotCheck {
+  locale: string;
+  device_type: string;
+  status: AppStoreConnectComparisonStatus;
+  local_count: number;
+  remote_count: number;
+}
+
+export interface AppStoreConnectIapCheck {
+  product_id: string;
+  status: AppStoreConnectComparisonStatus;
+  local_display_name?: string;
+  remote_display_name?: string;
+  remote_state?: string;
+  has_price_schedule?: boolean;
+}
+
+export interface AppStoreConnectSummary {
+  value_matches: number;
+  value_mismatches: number;
+  value_remote_only: number;
+  value_local_only: number;
+  screenshot_matches: number;
+  screenshot_mismatches: number;
+  screenshot_remote_only: number;
+  screenshot_local_only: number;
+  iap_matches: number;
+  iap_mismatches: number;
+  iap_remote_only: number;
+  iap_local_only: number;
+}
+
+export interface AppStoreConnectReport {
+  status: AppStoreConnectStatus;
+  auth_source?: AppStoreConnectAuthSource;
+  app_id?: string;
+  app_name?: string;
+  bundle_id?: string;
+  version_id?: string;
+  version_string?: string;
+  version_state?: string;
+  version_source?: "editable" | "latest-live" | "latest-any";
+  missing_env: string[];
+  value_checks: AppStoreConnectValueCheck[];
+  screenshot_checks: AppStoreConnectScreenshotCheck[];
+  iap_checks: AppStoreConnectIapCheck[];
+  available_territories: string[];
+  has_app_price_schedule?: boolean;
+  review_attachment_count?: number;
+  warnings: string[];
+  notes: string[];
+  summary: AppStoreConnectSummary;
 }
 
 export interface RiskReport {
@@ -197,7 +275,8 @@ export interface BaselineComparison {
 }
 
 export interface ScanResult extends RiskReport {
-  reviewer_pack: ReviewerPackReport;
+  review_readiness: ReviewReadinessReport;
+  app_store_connect: AppStoreConnectReport;
   discovery: DiscoveryReport;
   evidence: DiscoveryEvidence[];
   missing_inputs: MissingInput[];
@@ -217,17 +296,25 @@ export interface ScanCommandOptions {
   json?: boolean;
   baselinePath?: string;
   annotations?: AnnotationTarget | string;
+  fetchImpl?: typeof fetch;
+  env?: NodeJS.ProcessEnv;
+  skipAppStoreConnect?: boolean;
   plain?: boolean;
   strict?: boolean;
   lang?: string;
+  allowInteractiveAppStoreConnectSetup?: boolean;
+  appStoreConnectRuntime?: AppStoreConnectInteractiveRuntime;
 }
 
-export interface ReviewerPackCommandOptions {
+export interface ReviewReadinessCommandOptions {
   configPath?: string;
   cwd?: string;
+  fetchImpl?: typeof fetch;
+  env?: NodeJS.ProcessEnv;
   json?: boolean;
   plain?: boolean;
   lang?: string;
+  appStoreConnectRuntime?: AppStoreConnectInteractiveRuntime;
 }
 
 export interface RulesCommandOptions {

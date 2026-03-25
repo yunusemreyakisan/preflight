@@ -1,5 +1,5 @@
-import { generateReviewerPackTemplate } from "./generator";
-import type { ReviewerPackItem, ReviewerPackReport, Translator } from "../types";
+import { generateSuggestedReviewNotes } from "./generator";
+import type { ReviewReadinessItem, ReviewReadinessReport, Translator } from "../types";
 import type { ScanInput } from "../scanner/build-scan-input";
 
 function buildItem(
@@ -7,8 +7,8 @@ function buildItem(
   label: string,
   status: "pass" | "fail",
   value?: string,
-  source?: ReviewerPackItem["source"]
-): ReviewerPackItem {
+  source?: ReviewReadinessItem["source"]
+): ReviewReadinessItem {
   return {
     key,
     label,
@@ -18,11 +18,11 @@ function buildItem(
   };
 }
 
-export function evaluateReviewerPack(
+export function evaluateReviewReadiness(
   input: ScanInput,
   translator: Translator
-): ReviewerPackReport {
-  const items: ReviewerPackItem[] = [];
+): ReviewReadinessReport {
+  const items: ReviewReadinessItem[] = [];
   const missing: string[] = [];
   const notes: string[] = [];
 
@@ -105,6 +105,6 @@ export function evaluateReviewerPack(
     items,
     missing,
     notes,
-    generatedReviewNotesTemplate: generateReviewerPackTemplate(input, translator)
+    suggestedReviewNotes: generateSuggestedReviewNotes(input, translator)
   };
 }

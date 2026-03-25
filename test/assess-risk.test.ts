@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { assessRisk, getExitCode, type Issue, type PassedCheck, type ReviewerPackReport } from "../src";
+import {
+  assessRisk,
+  getExitCode,
+  type Issue,
+  type PassedCheck,
+  type ReviewReadinessReport
+} from "../src";
 
 function issue(overrides: Partial<Issue>): Issue {
   return {
@@ -16,12 +22,12 @@ function issue(overrides: Partial<Issue>): Issue {
   };
 }
 
-const reviewerPackComplete: ReviewerPackReport = {
+const reviewReadinessComplete: ReviewReadinessReport = {
   status: "complete",
   items: [],
   missing: [],
   notes: [],
-  generatedReviewNotesTemplate: ""
+  suggestedReviewNotes: ""
 };
 
 const passedChecks: PassedCheck[] = [
@@ -39,7 +45,7 @@ describe("assessRisk", () => {
       blockingIssues: [issue({ severity: "high" })],
       warnings: [],
       passedChecks,
-      reviewerPack: reviewerPackComplete
+      reviewReadiness: reviewReadinessComplete
     });
 
     expect(result.risk_level).toBe("HIGH");
@@ -52,7 +58,7 @@ describe("assessRisk", () => {
       blockingIssues: [],
       warnings: [issue({ id: "WARN_001", severity: "medium" })],
       passedChecks,
-      reviewerPack: reviewerPackComplete
+      reviewReadiness: reviewReadinessComplete
     });
 
     expect(result.risk_level).toBe("MEDIUM");
@@ -65,7 +71,7 @@ describe("assessRisk", () => {
       blockingIssues: [],
       warnings: [issue({ severity: "low" })],
       passedChecks,
-      reviewerPack: reviewerPackComplete
+      reviewReadiness: reviewReadinessComplete
     });
 
     expect(result.risk_level).toBe("LOW");
