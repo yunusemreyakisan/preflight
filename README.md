@@ -1,5 +1,6 @@
 # Preflight
 
+[![Hypercommit](https://img.shields.io/badge/Hypercommit-DB2475)](https://hypercommit.com/preflight)
 [![CI](https://github.com/yunusemreyakisan/preflight/actions/workflows/ci.yml/badge.svg)](https://github.com/yunusemreyakisan/preflight/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/yunusemreyakisan/preflight?display_name=tag)](https://github.com/yunusemreyakisan/preflight/releases)
 
