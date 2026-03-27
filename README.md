@@ -46,6 +46,7 @@ Useful first commands:
 - Compare with a previous report: `npx @yakisan/preflight scan --baseline preflight-report.json`
 - Emit GitHub Actions annotations: `npx @yakisan/preflight scan --annotations github`
 - Skip App Store Connect calls: `npx @yakisan/preflight scan --skip-app-store-connect`
+- CLI version: `npx @yakisan/preflight --version`
 - Generate an override template: `npx @yakisan/preflight init`
 
 ## What Preflight Checks
@@ -105,6 +106,7 @@ Core commands:
 Key flags:
 
 - `--lang <locale>`: output locale
+- `-v, --version`: print the current CLI version
 - `--config <path>`: path to an optional override file
 - `--json`: machine-readable output
 - `--baseline <path>`: compare the current scan against a previous JSON scan report

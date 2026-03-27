@@ -2,6 +2,7 @@ import Table from "cli-table3";
 import chalk from "chalk";
 
 import { RULESET_METADATA } from "../rules/registry";
+import type { CliUpdateInfo } from "../updates/check-for-cli-update";
 import type {
   AppStoreConnectComparisonStatus,
   AppStoreConnectReport,
@@ -1155,6 +1156,46 @@ export function formatHumanScanReport(
 
   const mode = resolveHumanOutputMode(options);
   return formatStandardScanReport(result, translator, mode);
+}
+
+export function formatScanUpdateNotice(
+  update: CliUpdateInfo,
+  translator: Translator,
+  options: {
+    ci?: boolean;
+    plain?: boolean;
+    outputMode?: HumanOutputMode;
+  } = {}
+): string {
+  if (options.ci) {
+    return [
+      `${translator.t("output.updateAvailable.title")}: ${translator.t("output.updateAvailable.detail", {
+        currentVersion: update.currentVersion,
+        latestVersion: update.latestVersion
+      })}`,
+      `${translator.t("output.updateAvailable.commandLabel")}: ${update.updateCommand}`
+    ].join("\n");
+  }
+
+  const mode = resolveHumanOutputMode(options);
+
+  return [
+    renderSectionTitle(translator.t("output.updateAvailable.title"), mode, "🆕"),
+    renderToneLine(
+      translator.t("output.updateAvailable.detail", {
+        currentVersion: update.currentVersion,
+        latestVersion: update.latestVersion
+      }),
+      "warn",
+      mode,
+      "⬆️"
+    ),
+    `  ${colorize(mode, "muted", translator.t("output.updateAvailable.commandLabel"))} ${colorize(
+      mode,
+      "strong",
+      update.updateCommand
+    )}`
+  ].join("\n");
 }
 
 export function formatHumanReviewReadiness(

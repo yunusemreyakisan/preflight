@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  PREFLIGHT_VERSION,
   RULE_REGISTRY,
   SUPPORTED_LOCALES,
   buildReviewReadinessReport,
@@ -306,6 +307,17 @@ function createAscFetchMock(): typeof fetch {
   });
 
   return fetchMock as unknown as typeof fetch;
+}
+
+function createUpdateCheckFetchMock(latestVersion: string): typeof fetch {
+  return vi.fn(async () => {
+    return new Response(JSON.stringify({ version: latestVersion }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json"
+      }
+    });
+  }) as unknown as typeof fetch;
 }
 
 describe("scanProject", () => {
@@ -1063,6 +1075,38 @@ describe("scanProject", () => {
     expect(output.includes("\u001b[")).toBe(false);
   });
 
+  it("appends update guidance to standard scan output when a newer CLI version exists", async () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const ascConfigPath = path.join(projectDir, ".preflight-home", "app-store-connect.json");
+    const config = buildValidConfig();
+    const latestVersion = "0.5.2";
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const { output } = await runScan({
+      appStoreConnectRuntime: {
+        configPath: ascConfigPath,
+        isInteractive: false
+      },
+      cwd: projectDir,
+      checkForUpdates: true,
+      updateCheckFetchImpl: createUpdateCheckFetchMock(latestVersion)
+    });
+    const renderedOutput = stripAnsi(output);
+
+    expect(renderedOutput).toContain("Update Available");
+    expect(renderedOutput).toContain(
+      `Preflight ${latestVersion} is available. You're running ${PREFLIGHT_VERSION}.`
+    );
+    expect(renderedOutput).toContain(
+      `npm install -g @yakisan/preflight@${latestVersion}`
+    );
+  });
+
   it("adds a concise next steps summary to ci output", async () => {
     const projectDir = createTempProject();
     createdDirs.push(projectDir);
@@ -1085,6 +1129,66 @@ describe("scanProject", () => {
 
     expect(output).toContain("Next Steps:");
     expect(output).toContain("[SOON] Set up App Store Connect access");
+  });
+
+  it("appends update guidance to ci output when a newer CLI version exists", async () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const ascConfigPath = path.join(projectDir, ".preflight-home", "app-store-connect.json");
+    const config = buildValidConfig();
+    const latestVersion = "0.5.2";
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const { output } = await runScan({
+      appStoreConnectRuntime: {
+        configPath: ascConfigPath,
+        isInteractive: false
+      },
+      cwd: projectDir,
+      ci: true,
+      checkForUpdates: true,
+      updateCheckFetchImpl: createUpdateCheckFetchMock(latestVersion)
+    });
+
+    expect(output).toContain("Update Available:");
+    expect(output).toContain(
+      `Preflight ${latestVersion} is available. You're running ${PREFLIGHT_VERSION}.`
+    );
+    expect(output).toContain(
+      `Update with: npm install -g @yakisan/preflight@${latestVersion}`
+    );
+  });
+
+  it("keeps json scan output unchanged when update checks are enabled", async () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const ascConfigPath = path.join(projectDir, ".preflight-home", "app-store-connect.json");
+    const config = buildValidConfig();
+    const updateCheckFetchImpl = createUpdateCheckFetchMock("0.5.2");
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const { output } = await runScan({
+      appStoreConnectRuntime: {
+        configPath: ascConfigPath,
+        isInteractive: false
+      },
+      cwd: projectDir,
+      json: true,
+      checkForUpdates: true,
+      updateCheckFetchImpl
+    });
+
+    expect(() => JSON.parse(output)).not.toThrow();
+    expect(output).not.toContain("Update Available");
+    expect(vi.mocked(updateCheckFetchImpl)).not.toHaveBeenCalled();
   });
 });
 

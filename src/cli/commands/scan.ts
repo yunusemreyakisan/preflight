@@ -1,6 +1,8 @@
 import { createTranslator, resolveLocale } from "../../i18n";
 import { formatGithubAnnotations } from "../../output/format-annotations";
+import { formatScanUpdateNotice } from "../../output/format-human";
 import { renderScanResult, scanProject } from "../../scanner/scan-project";
+import { checkForCliUpdate } from "../../updates/check-for-cli-update";
 import type { AnnotationTarget, ScanCommandOptions, ScanResult } from "../../types";
 
 export interface RunScanResult {
@@ -46,7 +48,21 @@ export async function runScan(options: ScanCommandOptions = {}): Promise<RunScan
     process.stderr.write(`${annotationLines.join("\n")}\n`);
   }
 
-  const output = renderScanResult(result, options);
+  let output = renderScanResult(result, options);
+
+  if (options.checkForUpdates && !options.json) {
+    const updateInfo = await checkForCliUpdate({
+      fetchImpl: options.updateCheckFetchImpl ?? options.fetchImpl
+    });
+
+    if (updateInfo) {
+      const translator = createTranslator(resolveLocale(options.lang ?? result.locale));
+      output = `${output}\n\n${formatScanUpdateNotice(updateInfo, translator, {
+        ci: options.ci,
+        plain: options.plain
+      })}`;
+    }
+  }
 
   return {
     exitCode: result.exit_code,

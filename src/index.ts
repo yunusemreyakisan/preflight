@@ -2,6 +2,7 @@ export { buildProgram, main } from "./cli/index";
 export { runInit, type RunInitResult } from "./cli/commands/init";
 export { runRules, type RunRulesResult } from "./cli/commands/rules";
 export { runScan, type RunScanResult } from "./cli/commands/scan";
+export { PREFLIGHT_PACKAGE_NAME, PREFLIGHT_VERSION } from "./version";
 export { fetchAppStoreConnectData } from "./app-store-connect/read-app-store-connect";
 export { SUPPORTED_LOCALES } from "./types";
 export {

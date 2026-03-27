@@ -21,6 +21,7 @@ const englishMessages: MessageCatalog = {
 
   "cli.description": "CI-grade App Store submission risk engine.",
   "cli.option.lang": "Output language",
+  "cli.option.version": "Output the current version",
   "cli.option.config": "Path to an optional preflight override file",
   "cli.option.ci": "Emit concise CI-oriented output",
   "cli.option.json": "Emit JSON output",
@@ -160,6 +161,10 @@ const englishMessages: MessageCatalog = {
   "output.nextSteps.priority.now": "NOW",
   "output.nextSteps.priority.soon": "SOON",
   "output.nextSteps.priority.later": "LATER",
+  "output.updateAvailable.title": "Update Available",
+  "output.updateAvailable.detail":
+    "Preflight {latestVersion} is available. You're running {currentVersion}.",
+  "output.updateAvailable.commandLabel": "Update with",
   "output.rule.version": "Bundled Rule Version",
   "output.rule.lastVerified": "Last Verified",
   "output.rule.remoteDeferred":
@@ -533,6 +538,7 @@ const turkishMessages: MessageCatalog = {
 
   "cli.description": "CI seviyesi App Store gonderim risk motoru.",
   "cli.option.lang": "Cikti dili",
+  "cli.option.version": "Mevcut surumu yazdir",
   "cli.option.config": "Opsiyonel preflight override dosya yolu",
   "cli.option.ci": "Kisa CI ciktilari uret",
   "cli.option.json": "JSON cikti uret",
@@ -673,6 +679,10 @@ const turkishMessages: MessageCatalog = {
   "output.nextSteps.priority.now": "SIMDI",
   "output.nextSteps.priority.soon": "YAKINDA",
   "output.nextSteps.priority.later": "DAHA SONRA",
+  "output.updateAvailable.title": "Guncelleme Hazir",
+  "output.updateAvailable.detail":
+    "Preflight {latestVersion} surumu hazir. Su anda {currentVersion} kullaniyorsunuz.",
+  "output.updateAvailable.commandLabel": "Guncelle",
   "output.rule.version": "Paketli Kural Surumu",
   "output.rule.lastVerified": "Son Dogrulama",
   "output.rule.remoteDeferred":

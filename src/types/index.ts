@@ -321,6 +321,8 @@ export interface ScanCommandOptions {
   plain?: boolean;
   strict?: boolean;
   lang?: string;
+  checkForUpdates?: boolean;
+  updateCheckFetchImpl?: typeof fetch;
   allowInteractiveAppStoreConnectSetup?: boolean;
   appStoreConnectRuntime?: AppStoreConnectInteractiveRuntime;
 }

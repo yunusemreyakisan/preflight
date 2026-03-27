@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildProgram } from "../src";
+import { PREFLIGHT_VERSION, buildProgram } from "../src";
 
 function getCommandHelp(locale: string, commandName: string): string {
   const program = buildProgram(["node", "preflight", "--lang", locale]);
@@ -21,6 +21,7 @@ describe("cli help", () => {
     const initHelp = getCommandHelp("en", "init");
 
     expect(globalHelp).toContain("CI-grade App Store submission risk engine.");
+    expect(globalHelp).toContain("-v, --version");
     expect(globalHelp).toContain("--plain");
     expect(scanHelp).toContain("Run an auto-discovery-first submission risk scan");
     expect(scanHelp).toContain("optional App Store Connect");
@@ -43,5 +44,44 @@ describe("cli help", () => {
     const program = buildProgram(["node", "preflight", "--lang", "en"]);
 
     expect(program.commands.some((entry) => entry.name() === "reviewer-pack")).toBe(false);
+  });
+
+  it("prints the current CLI version with both version flags", async () => {
+    const longFlagOutput: string[] = [];
+    const shortFlagOutput: string[] = [];
+    const longFlagProgram = buildProgram(["node", "preflight", "--lang", "en"]);
+    const shortFlagProgram = buildProgram(["node", "preflight", "--lang", "en"]);
+
+    longFlagProgram.configureOutput({
+      writeErr: () => undefined,
+      writeOut: (value) => {
+        longFlagOutput.push(value);
+      }
+    });
+    longFlagProgram.exitOverride();
+
+    shortFlagProgram.configureOutput({
+      writeErr: () => undefined,
+      writeOut: (value) => {
+        shortFlagOutput.push(value);
+      }
+    });
+    shortFlagProgram.exitOverride();
+
+    await expect(
+      longFlagProgram.parseAsync(["node", "preflight", "--version"])
+    ).rejects.toMatchObject({
+      code: "commander.version",
+      exitCode: 0
+    });
+    await expect(
+      shortFlagProgram.parseAsync(["node", "preflight", "-v"])
+    ).rejects.toMatchObject({
+      code: "commander.version",
+      exitCode: 0
+    });
+
+    expect(longFlagOutput.join("")).toContain(PREFLIGHT_VERSION);
+    expect(shortFlagOutput.join("")).toContain(PREFLIGHT_VERSION);
   });
 });

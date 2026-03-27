@@ -1,6 +1,7 @@
 import { Command } from "commander";
 
 import { createTranslator, resolveLocaleFromArgv } from "../i18n";
+import { PREFLIGHT_VERSION } from "../version";
 import { runInit } from "./commands/init";
 import { runRules } from "./commands/rules";
 import { runScan } from "./commands/scan";
@@ -35,6 +36,7 @@ export function buildProgram(argv = process.argv): Command {
     .name("preflight")
     .description(translator.t("cli.description"))
     .showHelpAfterError()
+    .version(PREFLIGHT_VERSION, "-v, --version", translator.t("cli.option.version"))
     .option("--lang <locale>", translator.t("cli.option.lang"))
     .option("--plain", translator.t("cli.option.plain"));
 
@@ -59,7 +61,8 @@ export function buildProgram(argv = process.argv): Command {
         skipAppStoreConnect: options.skipAppStoreConnect,
         plain: globalOptions.plain,
         strict: options.strict,
-        lang: globalOptions.lang
+        lang: globalOptions.lang,
+        checkForUpdates: true
       });
       printAndSetExitCode(output, exitCode);
     });
