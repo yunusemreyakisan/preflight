@@ -18,6 +18,7 @@ import { assessRisk, getExitCode } from "../risk/assess-risk";
 import { evaluateRuleRegistry, RULE_REGISTRY } from "../rules/registry";
 import { buildScanInput, collectMissingInputs } from "./build-scan-input";
 import { compareAgainstBaseline } from "./compare-baseline";
+import { generateNextSteps } from "./generate-next-steps";
 import type {
   AppStoreConnectReport,
   DiscoveryReport,
@@ -190,6 +191,7 @@ function buildFailureResult(
     discovery: preparation.discovery,
     evidence: preparation.discovery.evidence,
     missing_inputs: [],
+    next_steps: [],
     rule_coverage_note: getCoverageNote(preparation.translator),
     exit_code: 2,
     locale: preparation.translator.locale,
@@ -215,6 +217,16 @@ function withBaselineComparison(
       cwd: options.cwd,
       translator
     })
+  };
+}
+
+function withNextSteps(
+  result: ScanResult,
+  translator: Translator
+): ScanResult {
+  return {
+    ...result,
+    next_steps: generateNextSteps(result, translator)
   };
 }
 
@@ -377,7 +389,7 @@ export async function scanProject(options: ScanCommandOptions = {}): Promise<Sca
 
   if (!preparation.ok) {
     return withBaselineComparison(
-      buildFailureResult(preparation),
+      withNextSteps(buildFailureResult(preparation), preparation.translator),
       options,
       preparation.translator
     );
@@ -395,21 +407,25 @@ export async function scanProject(options: ScanCommandOptions = {}): Promise<Sca
   });
 
   return withBaselineComparison(
-    {
-      ...risk,
-      primary_reason: risk.primary_reason ?? missingInputs[0]?.message,
-      review_readiness: reviewReadiness,
-      app_store_connect: preparation.appStoreConnect,
-      discovery: preparation.discovery,
-      evidence: preparation.discovery.evidence,
-      missing_inputs: missingInputs,
-      rule_coverage_note: getCoverageNote(preparation.translator),
-      exit_code: getExitCode(risk.risk_level, options.strict),
-      locale: preparation.translator.locale,
-      scanned_at: new Date().toISOString(),
-      config_path: preparation.configPath,
-      config_warnings: preparation.configWarnings
-    },
+    withNextSteps(
+      {
+        ...risk,
+        primary_reason: risk.primary_reason ?? missingInputs[0]?.message,
+        review_readiness: reviewReadiness,
+        app_store_connect: preparation.appStoreConnect,
+        discovery: preparation.discovery,
+        evidence: preparation.discovery.evidence,
+        missing_inputs: missingInputs,
+        next_steps: [],
+        rule_coverage_note: getCoverageNote(preparation.translator),
+        exit_code: getExitCode(risk.risk_level, options.strict),
+        locale: preparation.translator.locale,
+        scanned_at: new Date().toISOString(),
+        config_path: preparation.configPath,
+        config_warnings: preparation.configWarnings
+      },
+      preparation.translator
+    ),
     options,
     preparation.translator
   );

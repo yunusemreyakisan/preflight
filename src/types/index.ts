@@ -274,12 +274,31 @@ export interface BaselineComparison {
   missing_inputs: BaselineMissingInputDiff;
 }
 
+export type NextStepPriority = "now" | "soon" | "later";
+export type NextStepKind =
+  | "missing-input"
+  | "issue-fix"
+  | "config-followup"
+  | "app-store-connect-followup";
+
+export interface NextStep {
+  id: string;
+  title: string;
+  detail: string;
+  priority: NextStepPriority;
+  kind: NextStepKind;
+  related_issue_ids?: string[];
+  config_paths?: string[];
+  suggested_value?: string;
+}
+
 export interface ScanResult extends RiskReport {
   review_readiness: ReviewReadinessReport;
   app_store_connect: AppStoreConnectReport;
   discovery: DiscoveryReport;
   evidence: DiscoveryEvidence[];
   missing_inputs: MissingInput[];
+  next_steps: NextStep[];
   baseline?: BaselineComparison;
   rule_coverage_note: string;
   exit_code: number;

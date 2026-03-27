@@ -152,6 +152,14 @@ const englishMessages: MessageCatalog = {
   "output.passedCheckTitle": "Passed check: {id}",
   "output.issuesNone": "No blocking issues or warnings were found.",
   "output.nextSteps": "Next Steps",
+  "output.nextSteps.none": "No follow-up actions are currently suggested.",
+  "output.nextSteps.relatedIssues": "Related Issues",
+  "output.nextSteps.paths": "Config Paths",
+  "output.nextSteps.suggestedValue": "Suggested Value",
+  "output.nextSteps.more": "...and {count} more suggested steps.",
+  "output.nextSteps.priority.now": "NOW",
+  "output.nextSteps.priority.soon": "SOON",
+  "output.nextSteps.priority.later": "LATER",
   "output.rule.version": "Bundled Rule Version",
   "output.rule.lastVerified": "Last Verified",
   "output.rule.remoteDeferred":
@@ -176,6 +184,20 @@ const englishMessages: MessageCatalog = {
   "template.init.subtitle": "Release safety",
   "template.init.description":
     "Prevent avoidable App Store review issues before submission.",
+  "nextStep.complete.title": "Complete {label}",
+  "nextStep.issueFix.title": "Resolve {issueId}",
+  "nextStep.config.title": "Review config warnings",
+  "nextStep.appStoreConnect.setup.title": "Set up App Store Connect access",
+  "nextStep.appStoreConnect.setup.env":
+    "Missing environment values: {missingEnv}.",
+  "nextStep.appStoreConnect.drift.title": "Review App Store Connect drift",
+  "nextStep.appStoreConnect.drift.detail":
+    "Reconcile {valueCount} value drifts, {screenshotCount} screenshot drifts, and {iapCount} IAP drifts before submission.",
+  "nextStep.appStoreConnect.warnings.title": "Review App Store Connect warnings",
+  "nextStep.suggested.demoAccount":
+    "username: reviewer@example.com\npassword: password123",
+  "nextStep.suggested.contact":
+    "name: Release Team\nemail: mobile@example.com",
 
   "category.configuration": "Configuration",
   "category.reviewer-access": "Reviewer Access",
@@ -643,6 +665,14 @@ const turkishMessages: MessageCatalog = {
   "output.passedCheckTitle": "Gecen kontrol: {id}",
   "output.issuesNone": "Engelleyici sorun veya uyari bulunmadi.",
   "output.nextSteps": "Sonraki Adimlar",
+  "output.nextSteps.none": "Su anda onerilen ek bir aksiyon yok.",
+  "output.nextSteps.relatedIssues": "Ilgili Issue'lar",
+  "output.nextSteps.paths": "Config Yollari",
+  "output.nextSteps.suggestedValue": "Onerilen Deger",
+  "output.nextSteps.more": "...ve {count} ek onerilen adim daha var.",
+  "output.nextSteps.priority.now": "SIMDI",
+  "output.nextSteps.priority.soon": "YAKINDA",
+  "output.nextSteps.priority.later": "DAHA SONRA",
   "output.rule.version": "Paketli Kural Surumu",
   "output.rule.lastVerified": "Son Dogrulama",
   "output.rule.remoteDeferred":
@@ -667,6 +697,20 @@ const turkishMessages: MessageCatalog = {
   "template.init.subtitle": "Yayin guvenligi",
   "template.init.description":
     "Gonderim oncesinde onlenebilir App Store review sorunlarini yakalayin.",
+  "nextStep.complete.title": "{label} alanini tamamla",
+  "nextStep.issueFix.title": "{issueId} sorununu coz",
+  "nextStep.config.title": "Config warning'lerini gozden gecir",
+  "nextStep.appStoreConnect.setup.title": "App Store Connect erisimini kur",
+  "nextStep.appStoreConnect.setup.env":
+    "Eksik environment degerleri: {missingEnv}.",
+  "nextStep.appStoreConnect.drift.title": "App Store Connect farklarini incele",
+  "nextStep.appStoreConnect.drift.detail":
+    "Gonderimden once {valueCount} deger farkini, {screenshotCount} screenshot farkini ve {iapCount} IAP farkini uzlastir.",
+  "nextStep.appStoreConnect.warnings.title": "App Store Connect warning'lerini incele",
+  "nextStep.suggested.demoAccount":
+    "username: reviewer@example.com\npassword: password123",
+  "nextStep.suggested.contact":
+    "name: Yayin Ekibi\nemail: mobile@example.com",
 
   "category.configuration": "Yapilandirma",
   "category.reviewer-access": "Reviewer Erisimi",

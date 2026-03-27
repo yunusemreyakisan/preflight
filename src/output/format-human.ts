@@ -9,6 +9,8 @@ import type {
   HumanOutputMode,
   Issue,
   MissingInput,
+  NextStep,
+  NextStepPriority,
   ReviewReadinessReport,
   RiskLevel,
   RuleCategory,
@@ -86,30 +88,52 @@ function colorize(
 }
 
 function formatStatusLabel(mode: HumanOutputMode, tone: StatusTone): string {
+  const label =
+    mode === "plain"
+      ? tone === "ok"
+        ? "OK"
+        : tone === "warn"
+          ? "WARN"
+          : "FAIL"
+      : tone === "ok"
+        ? "✅ OK"
+        : tone === "warn"
+          ? "⚠️ WARN"
+          : "🛑 FAIL";
+
   if (tone === "ok") {
-    return colorize(mode, "ok", "OK");
+    return colorize(mode, "ok", label);
   }
 
   if (tone === "warn") {
-    return colorize(mode, "warn", "WARN");
+    return colorize(mode, "warn", label);
   }
 
-  return colorize(mode, "fail", "FAIL");
+  return colorize(mode, "fail", label);
 }
 
 function colorizeRisk(
   mode: HumanOutputMode,
   level: ScanResult["risk_level"]
 ): string {
+  const label =
+    mode === "plain"
+      ? level
+      : level === "HIGH"
+        ? `🔴 ${level}`
+        : level === "MEDIUM"
+          ? `🟠 ${level}`
+          : `🟢 ${level}`;
+
   if (level === "HIGH") {
-    return colorize(mode, "fail", level);
+    return colorize(mode, "fail", label);
   }
 
   if (level === "MEDIUM") {
-    return colorize(mode, "warn", level);
+    return colorize(mode, "warn", label);
   }
 
-  return colorize(mode, "ok", level);
+  return colorize(mode, "ok", label);
 }
 
 function getVerdictKey(level: RiskLevel): string {
@@ -170,6 +194,138 @@ function renderStatusRow(
 ): string {
   const fill = ".".repeat(Math.max(2, 46 - label.length));
   return `  ${label} ${colorize(mode, "muted", fill)} ${formatStatusLabel(mode, tone)}`;
+}
+
+function renderSectionTitle(
+  label: string,
+  mode: HumanOutputMode,
+  icon?: string
+): string {
+  if (mode === "plain" || !icon) {
+    return `  ${colorize(mode, "strong", label)}`;
+  }
+
+  return `  ${colorize(mode, "brand", icon)} ${colorize(mode, "strong", label)}`;
+}
+
+function renderToneLine(
+  text: string,
+  tone: StatusTone,
+  mode: HumanOutputMode,
+  icon?: string
+): string {
+  if (mode === "plain" || !icon) {
+    return `  ${colorize(mode, tone, text)}`;
+  }
+
+  return `  ${colorize(mode, tone, icon)} ${colorize(mode, tone, text)}`;
+}
+
+function renderVerdictLine(
+  level: RiskLevel,
+  translator: Translator,
+  mode: HumanOutputMode
+): string {
+  const text = translator.t(getVerdictKey(level));
+  const tone: StatusTone =
+    level === "LOW" ? "ok" : level === "MEDIUM" ? "warn" : "fail";
+  const icon = level === "LOW" ? "🚀" : level === "MEDIUM" ? "👀" : "🛑";
+  return renderToneLine(text, tone, mode, icon);
+}
+
+function getNextStepPriorityTone(priority: NextStepPriority): StatusTone {
+  if (priority === "now") {
+    return "fail";
+  }
+
+  if (priority === "soon") {
+    return "warn";
+  }
+
+  return "ok";
+}
+
+function formatNextStepPriorityLabel(
+  priority: NextStepPriority,
+  translator: Translator,
+  mode: HumanOutputMode
+): string {
+  const label = translator.t(`output.nextSteps.priority.${priority}`);
+
+  if (mode === "plain") {
+    return label;
+  }
+
+  if (priority === "now") {
+    return colorize(mode, "fail", `🔥 ${label}`);
+  }
+
+  if (priority === "soon") {
+    return colorize(mode, "warn", `⏭️ ${label}`);
+  }
+
+  return colorize(mode, "ok", `💡 ${label}`);
+}
+
+function formatNextStepBlock(
+  step: NextStep,
+  translator: Translator,
+  mode: HumanOutputMode
+): string[] {
+  const lines = [
+    `  ${formatNextStepPriorityLabel(step.priority, translator, mode)} ${colorize(
+      mode,
+      "strong",
+      step.title
+    )}`,
+    `    ${colorize(mode, getNextStepPriorityTone(step.priority), step.detail)}`
+  ];
+
+  if (step.related_issue_ids && step.related_issue_ids.length > 0) {
+    lines.push(
+      `    ${colorize(mode, "muted", translator.t("output.nextSteps.relatedIssues"))} ${step.related_issue_ids.join(", ")}`
+    );
+  }
+
+  if (step.config_paths && step.config_paths.length > 0) {
+    lines.push(
+      `    ${colorize(mode, "muted", translator.t("output.nextSteps.paths"))} ${step.config_paths.join(", ")}`
+    );
+  }
+
+  if (step.suggested_value) {
+    lines.push(
+      `    ${colorize(mode, "muted", translator.t("output.nextSteps.suggestedValue"))}`
+    );
+    step.suggested_value
+      .split("\n")
+      .forEach((line) => lines.push(`      ${line}`));
+  }
+
+  return lines;
+}
+
+function formatNextStepsSection(
+  result: ScanResult,
+  translator: Translator,
+  mode: HumanOutputMode
+): string[] {
+  const lines = [renderSectionTitle(translator.t("output.nextSteps"), mode, "🪜")];
+
+  if (result.next_steps.length === 0) {
+    lines.push(`  ${colorize(mode, "muted", translator.t("output.nextSteps.none"))}`);
+    return lines;
+  }
+
+  result.next_steps.forEach((step) => {
+    lines.push(...formatNextStepBlock(step, translator, mode), "");
+  });
+
+  if (lines[lines.length - 1] === "") {
+    lines.pop();
+  }
+
+  return lines;
 }
 
 function getCategoryTone(
@@ -293,7 +449,7 @@ function formatDiscoverySection(
   mode: HumanOutputMode
 ): string[] {
   const lines = [
-    `  ${colorize(mode, "strong", translator.t("output.discovery.title"))}`,
+    renderSectionTitle(translator.t("output.discovery.title"), mode, "🛰️"),
     renderLabelValue(
       translator.t("output.discovery.projectType"),
       translator.t(`projectType.${result.discovery.project_type}`),
@@ -429,7 +585,7 @@ function formatBaselineSection(
   mode: HumanOutputMode
 ): string[] {
   const lines = [
-    `  ${colorize(mode, "strong", translator.t("output.baseline.title"))}`,
+    renderSectionTitle(translator.t("output.baseline.title"), mode, "📈"),
     renderLabelValue(
       translator.t("output.baseline.comparedAgainst"),
       baseline.path,
@@ -823,6 +979,23 @@ function formatCiScanReport(
     }
   }
 
+  if (result.next_steps.length > 0) {
+    lines.push(`${translator.t("output.nextSteps")}:`);
+    result.next_steps.slice(0, 3).forEach((step) => {
+      lines.push(
+        `- [${translator.t(`output.nextSteps.priority.${step.priority}`)}] ${step.title}: ${step.detail}`
+      );
+    });
+
+    if (result.next_steps.length > 3) {
+      lines.push(
+        translator.t("output.nextSteps.more", {
+          count: result.next_steps.length - 3
+        })
+      );
+    }
+  }
+
   return lines.join("\n");
 }
 
@@ -858,7 +1031,7 @@ function formatStandardScanReport(
     renderLabelValue(translator.t("output.configPath"), result.config_path, mode),
     renderLabelValue(translator.t("output.scannedAt"), result.scanned_at, mode),
     "",
-    `  ${colorize(mode, "strong", translator.t("output.surface.title"))}`
+    renderSectionTitle(translator.t("output.surface.title"), mode, "🧭")
   ];
 
   buildSurfaceRows(result, translator).forEach((row) => {
@@ -868,7 +1041,7 @@ function formatStandardScanReport(
   if (result.primary_reason) {
     lines.push(
       "",
-      `  ${colorize(mode, "strong", translator.t("output.primaryReason"))}`,
+      renderSectionTitle(translator.t("output.primaryReason"), mode, "🎯"),
       `  ${result.primary_reason}`
     );
   }
@@ -878,7 +1051,11 @@ function formatStandardScanReport(
   if (result.blocking_issues.length > 0) {
     lines.push(
       "",
-      `  ${colorize(mode, "strong", `${translator.t("output.blockingIssues")} (${result.blocking_issues.length})`)}`
+      renderSectionTitle(
+        `${translator.t("output.blockingIssues")} (${result.blocking_issues.length})`,
+        mode,
+        "🚫"
+      )
     );
     result.blocking_issues.forEach((issue) => {
       lines.push(...formatIssueBlock(issue, translator, mode), "");
@@ -888,7 +1065,11 @@ function formatStandardScanReport(
   if (result.warnings.length > 0) {
     lines.push(
       "",
-      `  ${colorize(mode, "strong", `${translator.t("output.warnings")} (${result.warnings.length})`)}`
+      renderSectionTitle(
+        `${translator.t("output.warnings")} (${result.warnings.length})`,
+        mode,
+        "⚠️"
+      )
     );
     result.warnings.forEach((issue) => {
       lines.push(...formatIssueBlock(issue, translator, mode), "");
@@ -918,7 +1099,7 @@ function formatStandardScanReport(
   );
 
   if (result.config_warnings.length > 0) {
-    lines.push("", `  ${colorize(mode, "strong", translator.t("output.configWarnings"))}`);
+    lines.push("", renderSectionTitle(translator.t("output.configWarnings"), mode, "🛠️"));
     result.config_warnings.forEach((warning) => {
       lines.push(`  - ${warning}`);
     });
@@ -927,7 +1108,11 @@ function formatStandardScanReport(
   if (result.missing_inputs.length > 0) {
     lines.push(
       "",
-      `  ${colorize(mode, "strong", `${translator.t("output.missingInputs.title")} (${result.missing_inputs.length})`)}`
+      renderSectionTitle(
+        `${translator.t("output.missingInputs.title")} (${result.missing_inputs.length})`,
+        mode,
+        "📝"
+      )
     );
     result.missing_inputs.forEach((missingInput) => {
       lines.push(...formatMissingInputBlock(missingInput, translator, mode), "");
@@ -940,14 +1125,16 @@ function formatStandardScanReport(
 
   lines.push(
     "",
-    `  ${colorize(mode, "strong", translator.t("output.reviewerPack.title"))}`,
+    renderSectionTitle(translator.t("output.reviewerPack.title"), mode, "🧾"),
     ...formatReviewReadinessTemplate(result.review_readiness, translator, mode),
     "",
-    `  ${colorize(mode, "strong", translator.t("output.appStoreConnect.title"))}`,
+    renderSectionTitle(translator.t("output.appStoreConnect.title"), mode, "🔌"),
     ...formatAppStoreConnectSection(result.app_store_connect, translator, mode),
     "",
-    `  ${colorize(mode, "strong", translator.t("output.verdict"))}`,
-    `  ${colorize(mode, result.risk_level === "LOW" ? "ok" : result.risk_level === "MEDIUM" ? "warn" : "fail", translator.t(getVerdictKey(result.risk_level)))}`
+    renderSectionTitle(translator.t("output.verdict"), mode, "🏁"),
+    renderVerdictLine(result.risk_level, translator, mode),
+    "",
+    ...formatNextStepsSection(result, translator, mode)
   );
 
   return lines.join("\n");
@@ -983,17 +1170,23 @@ export function formatHumanReviewReadiness(
   return [
     ...createPanel("PREFLIGHT", translator.t("output.brand.tagline"), mode),
     "",
-    `  ${colorize(mode, "strong", translator.t("output.reviewerPack.title"))}`,
+    renderSectionTitle(translator.t("output.reviewerPack.title"), mode, "🧾"),
     ...formatReviewReadinessTemplate(reviewReadiness, translator, mode),
     "",
-    `  ${colorize(mode, "strong", translator.t("output.verdict"))}`,
-    `  ${colorize(
-      mode,
-      reviewReadiness.status === "complete" ? "ok" : "fail",
-      reviewReadiness.status === "complete"
-        ? translator.t("output.reviewerPack.complete")
-        : translator.t("output.reviewerPack.incomplete")
-    )}`
+    renderSectionTitle(translator.t("output.verdict"), mode, "🏁"),
+    reviewReadiness.status === "complete"
+      ? renderToneLine(
+          translator.t("output.reviewerPack.complete"),
+          "ok",
+          mode,
+          "✅"
+        )
+      : renderToneLine(
+          translator.t("output.reviewerPack.incomplete"),
+          "fail",
+          mode,
+          "🛑"
+        )
   ].join("\n");
 }
 
@@ -1010,7 +1203,7 @@ export function formatRulesTable(
   const lines: string[] = [
     ...createPanel("PREFLIGHT", translator.t("output.brand.tagline"), mode),
     "",
-    `  ${colorize(mode, "strong", translator.t("output.rules.title"))}`
+    renderSectionTitle(translator.t("output.rules.title"), mode, "📚")
   ];
 
   if (options.includeMetadata) {

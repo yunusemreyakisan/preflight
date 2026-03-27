@@ -53,7 +53,7 @@
 
     <text x="72" y="160" fill="#ECEFF7" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="18">Last run: Tue Mar 24 17:42:12 on ttyS000</text>
     <text x="72" y="188" fill="#ECEFF7" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="16">yakisan@mac % npx @yakisan/preflight scan --baseline preflight-report.json --annotations github</text>
-    <text x="72" y="216" fill="#A7D8A1" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="18">preflight v0.3.6 - CI diffing and PR annotations</text>
+    <text x="72" y="216" fill="#A7D8A1" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="18">preflight v0.5.0 - CI diffing and PR annotations</text>
     <text x="72" y="244" fill="#D5DAE5" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="18">=========================================================</text>
 
     <text x="72" y="292" fill="#D5DAE5" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace" font-size="18">Project Type</text>

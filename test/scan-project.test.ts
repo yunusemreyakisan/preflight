@@ -9,7 +9,9 @@ import {
   SUPPORTED_LOCALES,
   buildReviewReadinessReport,
   createTranslator,
+  formatHumanReviewReadiness,
   formatHumanScanReport,
+  formatRulesTable,
   renderReviewReadinessResult,
   runInit,
   runRules,
@@ -28,6 +30,11 @@ import {
 } from "./helpers";
 
 const createdDirs: string[] = [];
+const ansiPattern = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
+
+function stripAnsi(value: string): string {
+  return value.replace(ansiPattern, "");
+}
 
 afterEach(() => {
   for (const directory of createdDirs.splice(0)) {
@@ -305,6 +312,7 @@ describe("scanProject", () => {
   it("returns LOW risk for a complete config", async () => {
     const projectDir = createTempProject();
     createdDirs.push(projectDir);
+    const ascConfigPath = path.join(projectDir, ".preflight-home", "app-store-connect.json");
     const config = buildValidConfig();
     writeConfig(projectDir, config);
     writeScreenshots(
@@ -312,7 +320,13 @@ describe("scanProject", () => {
       config.metadata.screenshots.map((entry) => entry.path)
     );
 
-    const result = await scanProject({ cwd: projectDir });
+    const result = await scanProject({
+      appStoreConnectRuntime: {
+        configPath: ascConfigPath,
+        isInteractive: false
+      },
+      cwd: projectDir
+    });
 
     expect(result.risk_level).toBe("LOW");
     expect(result.exit_code).toBe(0);
@@ -326,6 +340,13 @@ describe("scanProject", () => {
       )
     ).toBe(true);
     expect(result.app_store_connect.status).toBe("skipped");
+    expect(result.next_steps).toHaveLength(1);
+    expect(result.next_steps[0]).toMatchObject({
+      id: "app-store-connect-followup:setup",
+      kind: "app-store-connect-followup",
+      priority: "soon",
+      title: "Set up App Store Connect access"
+    });
   });
 
   it("discovers a native iOS project without config", async () => {
@@ -465,6 +486,7 @@ describe("scanProject", () => {
   it("returns the v0.4 JSON shape", async () => {
     const projectDir = createTempProject();
     createdDirs.push(projectDir);
+    const ascConfigPath = path.join(projectDir, ".preflight-home", "app-store-connect.json");
     const config = buildValidConfig();
     writeConfig(projectDir, config);
     writeScreenshots(
@@ -474,6 +496,7 @@ describe("scanProject", () => {
 
     const { output } = await runScan({
       appStoreConnectRuntime: {
+        configPath: ascConfigPath,
         isInteractive: false
       },
       cwd: projectDir,
@@ -488,10 +511,64 @@ describe("scanProject", () => {
     expect(parsed.app_store_connect.warnings).toContain(
       "Interactive App Store Connect setup is only available in a local terminal. Run `preflight scan` locally once or set ASC_* environment variables."
     );
+    expect(parsed.next_steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "app-store-connect-followup:setup",
+          kind: "app-store-connect-followup",
+          priority: "soon",
+          title: "Set up App Store Connect access"
+        })
+      ])
+    );
     expect(parsed.discovery).toBeDefined();
     expect(parsed.discovery.sources).toEqual([]);
     expect(parsed.missing_inputs).toEqual([]);
     expect(parsed.evidence).toEqual([]);
+  });
+
+  it("prefers missing-input next steps over duplicate reviewer issue steps", async () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const config = buildValidConfig();
+
+    config.review.notes = "";
+    config.review.loginInstructions = "";
+    config.review.contact = undefined;
+    config.appCapabilities.loginRequired = true;
+
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      buildValidConfig().metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const result = await scanProject({ cwd: projectDir });
+
+    expect(result.next_steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "missing-input:review.notes",
+          priority: "now",
+          kind: "missing-input"
+        }),
+        expect.objectContaining({
+          id: "missing-input:review.loginInstructions",
+          priority: "now",
+          kind: "missing-input"
+        }),
+        expect.objectContaining({
+          id: "missing-input:review.contact",
+          priority: "now",
+          kind: "missing-input"
+        })
+      ])
+    );
+    expect(result.next_steps.some((step) => step.id === "issue-fix:REVIEWER_003")).toBe(false);
+    expect(result.next_steps.some((step) => step.id === "issue-fix:REVIEWER_004")).toBe(false);
+    expect(
+      result.next_steps.find((step) => step.id === "missing-input:review.notes")?.suggested_value
+    ).toContain("Test Account");
   });
 
   it("uses saved local App Store Connect config when environment credentials are absent", async () => {
@@ -663,6 +740,9 @@ describe("scanProject", () => {
     expect(result.app_store_connect.notes).toContain(
       "App Store Connect checks were skipped by CLI flag."
     );
+    expect(result.next_steps.some((step) => step.id === "app-store-connect-followup:setup")).toBe(
+      false
+    );
     expect(prompt).not.toHaveBeenCalled();
     expect(fs.existsSync(ascConfigPath)).toBe(false);
   });
@@ -716,6 +796,15 @@ describe("scanProject", () => {
 
     expect(result.risk_level).toBe("LOW");
     expect(result.app_store_connect.summary.value_mismatches).toBeGreaterThan(0);
+    expect(result.next_steps).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "app-store-connect-followup:drift",
+          kind: "app-store-connect-followup",
+          priority: "soon"
+        })
+      ])
+    );
     expect(
       result.app_store_connect.value_checks.some(
         (check) =>
@@ -913,6 +1002,7 @@ describe("scanProject", () => {
   it("renders the branded scan layout when requested", async () => {
     const projectDir = createTempProject();
     createdDirs.push(projectDir);
+    const ascConfigPath = path.join(projectDir, ".preflight-home", "app-store-connect.json");
     const config = buildValidConfig();
     writeConfig(projectDir, config);
     writeScreenshots(
@@ -920,21 +1010,33 @@ describe("scanProject", () => {
       config.metadata.screenshots.map((entry) => entry.path)
     );
 
-    const result = await scanProject({ cwd: projectDir });
-    const output = formatHumanScanReport(result, createTranslator("en"), {
-      outputMode: "branded"
+    const result = await scanProject({
+      appStoreConnectRuntime: {
+        configPath: ascConfigPath,
+        isInteractive: false
+      },
+      cwd: projectDir
     });
+    const output = stripAnsi(
+      formatHumanScanReport(result, createTranslator("en"), {
+        outputMode: "branded"
+      })
+    );
 
-    expect(output).toContain("Submission Surface");
-    expect(output).toContain("Review Readiness");
-    expect(output).toContain("App Store Connect");
-    expect(output).toContain("Verdict");
-    expect(output).toContain("READY TO SUBMIT");
+    expect(output).toContain("🧭 Submission Surface");
+    expect(output).toContain("🧾 REVIEW READINESS");
+    expect(output).toContain("🔌 APP STORE CONNECT");
+    expect(output).toContain("🏁 Verdict");
+    expect(output).toContain("🪜 Next Steps");
+    expect(output).toContain("🚀 READY TO SUBMIT");
+    expect(output).toContain("⏭️ SOON Set up App Store Connect access");
+    expect(output).toContain("✅ OK");
   });
 
   it("supports explicit plain output", async () => {
     const projectDir = createTempProject();
     createdDirs.push(projectDir);
+    const ascConfigPath = path.join(projectDir, ".preflight-home", "app-store-connect.json");
     const config = buildValidConfig();
     writeConfig(projectDir, config);
     writeScreenshots(
@@ -944,6 +1046,7 @@ describe("scanProject", () => {
 
     const { output } = await runScan({
       appStoreConnectRuntime: {
+        configPath: ascConfigPath,
         isInteractive: false
       },
       cwd: projectDir,
@@ -952,7 +1055,36 @@ describe("scanProject", () => {
 
     expect(output).toContain("Submission Surface");
     expect(output).toContain("READY TO SUBMIT");
+    expect(output).toContain("Next Steps");
+    expect(output).toContain("SOON Set up App Store Connect access");
+    expect(output).not.toContain("🧭");
+    expect(output).not.toContain("✅");
+    expect(output).not.toContain("🚀");
     expect(output.includes("\u001b[")).toBe(false);
+  });
+
+  it("adds a concise next steps summary to ci output", async () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const ascConfigPath = path.join(projectDir, ".preflight-home", "app-store-connect.json");
+    const config = buildValidConfig();
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const { output } = await runScan({
+      appStoreConnectRuntime: {
+        configPath: ascConfigPath,
+        isInteractive: false
+      },
+      cwd: projectDir,
+      ci: true
+    });
+
+    expect(output).toContain("Next Steps:");
+    expect(output).toContain("[SOON] Set up App Store Connect access");
   });
 });
 
@@ -994,6 +1126,43 @@ describe("auxiliary commands", () => {
 
     expect(exitCode).toBe(0);
     expect(output).toContain("Review Readiness");
+  });
+
+  it("renders branded review readiness output with emoji accents", async () => {
+    const projectDir = createTempProject();
+    createdDirs.push(projectDir);
+    const config = buildValidConfig();
+    writeConfig(projectDir, config);
+    writeScreenshots(
+      projectDir,
+      config.metadata.screenshots.map((entry) => entry.path)
+    );
+
+    const { reviewReadiness } = await buildReviewReadinessReport({
+      cwd: projectDir,
+      lang: "en"
+    });
+    const output = stripAnsi(
+      formatHumanReviewReadiness(reviewReadiness, createTranslator("en"), {
+        outputMode: "branded"
+      })
+    );
+
+    expect(output).toContain("🧾 REVIEW READINESS");
+    expect(output).toContain("🏁 Verdict");
+    expect(output).toContain("✅ REVIEW READINESS IS COMPLETE");
+    expect(output).toContain("✅ OK");
+  });
+
+  it("renders branded rules output with emoji heading", () => {
+    const output = stripAnsi(
+      formatRulesTable(RULE_REGISTRY, createTranslator("en"), {
+        outputMode: "branded"
+      })
+    );
+
+    expect(output).toContain("📚 ACTIVE RULES");
+    expect(output).toContain("30 bundled rules");
   });
 
   it("creates a starter config with init", () => {
