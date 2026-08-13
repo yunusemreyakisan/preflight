@@ -1,3 +1,5 @@
+
+
 # Preflight
 
 [![Hypercommit](https://img.shields.io/badge/Hypercommit-DB2475)](https://hypercommit.com/preflight)
@@ -139,7 +141,6 @@ English and Turkish currently have full localized messaging. Other bundled local
 
 `preflight scan` discovers what it can from local project files first, then merges `preflight.config.json` only if the file exists.
 
-Use the override config only for reviewer-only inputs and deliberate overrides that cannot be inferred reliably from local files.
 Use the override config only for review-only inputs and deliberate overrides that cannot be inferred reliably from local files. Empty string placeholders are treated as missing so App Store Connect values can still fill them during `scan`.
 
 Minimal example:
